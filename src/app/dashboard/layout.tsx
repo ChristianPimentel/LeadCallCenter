@@ -109,7 +109,7 @@ export default function DashboardLayout({
         </Sheet>
         
         <div className="relative flex-1 md:grow-0">
-            <Link href="/" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
+            <Link href="/dashboard" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
               <Logo className="h-6 w-6" />
               <span className="hidden sm:inline-block">CallFlow</span>
             </Link>
