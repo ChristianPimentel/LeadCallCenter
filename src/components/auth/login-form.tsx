@@ -12,22 +12,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { User } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, query, where, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const initialUsers: Omit<User, 'id'>[] = [
-  { name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
-  { name: 'Regular User', email: 'user@example.com', role: 'User' },
+  { name: 'Admin User', email: 'admin@example.com', role: 'Admin', password: 'password' },
+  { name: 'Regular User', email: 'user@example.com', role: 'User', password: 'password' },
 ];
 
 async function seedInitialUsers() {
@@ -43,7 +36,6 @@ async function seedInitialUsers() {
 
 export function LoginForm() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<'Admin' | 'User'>('User');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -54,24 +46,39 @@ export function LoginForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
       const usersCollection = collection(db, 'users');
-      const q = query(usersCollection, where("role", "==", selectedRole), limit(1));
+      const q = query(usersCollection, where("email", "==", email));
       const querySnapshot = await getDocs(q);
 
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        const userToLogin = { id: userDoc.id, ...userDoc.data() } as User;
+      if (querySnapshot.empty) {
+        toast({
+          title: "Login Failed",
+          description: "No user found with that email address.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const userDoc = querySnapshot.docs[0];
+      const userToLogin = { id: userDoc.id, ...userDoc.data() } as User;
+
+      if (userToLogin.password === password) {
         localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
         router.push('/dashboard');
       } else {
         toast({
           title: "Login Failed",
-          description: `No user found with the role "${selectedRole}". Please contact an admin.`,
+          description: "Incorrect password. Please try again.",
           variant: "destructive",
         });
       }
+
     } catch (error) {
       console.error("Error logging in:", error);
       toast({
@@ -89,7 +96,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Select a role to log in. This will connect to a live Firestore database.
+          Enter your email and password to log in.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -98,27 +105,16 @@ export function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
               placeholder="m@example.com"
               required
-              defaultValue="demo@example.com"
+              defaultValue="admin@example.com"
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required defaultValue="password" />
-          </div>
-           <div className="grid gap-2">
-            <Label htmlFor="role">Login as</Label>
-             <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as 'Admin' | 'User')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="User">User</SelectItem>
-                </SelectContent>
-              </Select>
+            <Input id="password" name="password" type="password" required defaultValue="password" />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Logging in..." : "Login"}

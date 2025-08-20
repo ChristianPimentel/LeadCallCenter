@@ -96,14 +96,24 @@ export default function UsersPage() {
     const name = formData.get('userName') as string;
     const email = formData.get('userEmail') as string;
     const role = formData.get('userRole') as 'Admin' | 'User';
+    const password = formData.get('userPassword') as string;
+
+    const userData: Partial<User> = { name, email, role };
+    if (password) {
+      userData.password = password;
+    }
 
     try {
       if (editingUser) {
         const userDoc = doc(db, 'users', editingUser.id);
-        await updateDoc(userDoc, { name, email, role });
+        await updateDoc(userDoc, userData);
         toast({ title: "User Updated", description: `${name}'s profile has been updated.` });
       } else {
-        await addDoc(collection(db, 'users'), { name, email, role });
+        if (!password) {
+            toast({ title: "Password Required", description: "Password is required for new users.", variant: "destructive" });
+            return;
+        }
+        await addDoc(collection(db, 'users'), { name, email, role, password });
         toast({ title: "User Added", description: `${name} has been added.` });
       }
     } catch (error) {
@@ -182,6 +192,10 @@ export default function UsersPage() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userEmail" className="text-right">Email</Label>
                   <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="userPassword" className="text-right">Password</Label>
+                  <Input id="userPassword" name="userPassword" type="password" placeholder={editingUser ? 'Leave blank to keep unchanged' : ''} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userRole" className="text-right">Role</Label>
