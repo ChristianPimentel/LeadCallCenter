@@ -65,7 +65,7 @@ import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/icons';
 import type { Group, Student, CallStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 
 const initialGroups: Group[] = [
@@ -271,7 +271,6 @@ export default function DashboardPage() {
   }
 
   return (
-    <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
         <div className="flex h-16 items-center gap-2 border-b px-6">
@@ -279,12 +278,30 @@ export default function DashboardPage() {
           <span className="text-xl font-bold">CallFlow</span>
         </div>
         <nav className="flex-1 overflow-auto p-4">
+          <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
             <DialogTrigger asChild>
                 <Button className="w-full mb-4" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true);}}>
                     <Plus className="mr-2 h-4 w-4" /> New Group
                 </Button>
             </DialogTrigger>
             {renderGroupCards()}
+             <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleGroupFormSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="groupName" className="text-right">Name</Label>
+                    <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </nav>
       </aside>
 
@@ -297,11 +314,14 @@ export default function DashboardPage() {
                         <span className="sr-only">Toggle Menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="sm:max-w-xs">
-                   <div className="flex h-16 items-center gap-2 border-b px-6">
-                        <Logo className="h-8 w-8 text-primary" />
+                <SheetContent side="left" className="sm:max-w-xs p-0">
+                  <SheetHeader className="flex flex-row h-16 items-center gap-2 border-b px-6">
+                     <Logo className="h-8 w-8 text-primary" />
+                     <SheetTitle>
                         <span className="text-xl font-bold">CallFlow</span>
-                    </div>
+                     </SheetTitle>
+                  </SheetHeader>
+                   <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
                      <nav className="flex-1 overflow-auto p-4">
                         <DialogTrigger asChild>
                             <Button className="w-full mb-4" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true);}}>
@@ -310,6 +330,23 @@ export default function DashboardPage() {
                         </DialogTrigger>
                         {renderGroupCards()}
                     </nav>
+                     <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleGroupFormSubmit}>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="groupName" className="text-right">Name</Label>
+                              <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                   </Dialog>
                 </SheetContent>
             </Sheet>
              <h1 className="text-xl font-semibold md:text-2xl flex-1">{selectedGroup?.name || 'Select a Group'}</h1>
@@ -462,24 +499,6 @@ export default function DashboardPage() {
         </main>
       </div>
       
-      {/* Group Dialog Content */}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleGroupFormSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="groupName" className="text-right">Name</Label>
-              <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-
       {/* Delete Group Alert */}
       <AlertDialog open={deleteGroupAlertOpen} onOpenChange={setDeleteGroupAlertOpen}>
         <AlertDialogContent>
@@ -496,6 +515,5 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-    </Dialog>
   );
 }
