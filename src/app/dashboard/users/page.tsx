@@ -300,10 +300,7 @@ export default function UsersPage() {
     <div className="grid gap-6">
       <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
           <div className="flex items-center">
-            <div className="flex-1">
-                <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
-                <p className="text-sm text-muted-foreground">Manage all users in the system.</p>
-            </div>
+            <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
           </div>
 
           <DialogContent>
@@ -364,8 +361,9 @@ export default function UsersPage() {
                         <CardDescription>Users with standard access.</CardDescription>
                     </div>
                     <DialogTrigger asChild>
-                        <Button onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" /> Add User
+                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                            <Plus className="h-4 w-4" />
+                            <span className="sr-only">Add User</span>
                         </Button>
                     </DialogTrigger>
                 </CardHeader>
