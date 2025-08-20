@@ -17,8 +17,10 @@ import {
   Activity,
   User,
   Users2,
-  Settings
+  Settings,
+  Upload,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -43,6 +45,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -111,6 +114,7 @@ export default function DashboardPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deleteGroupAlertOpen, setDeleteGroupAlertOpen] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -298,6 +302,60 @@ export default function DashboardPage() {
       const href = e.currentTarget.href;
       await handleLogCall(studentId, 'Called');
       window.location.href = href;
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !currentUser || !selectedGroupId) return;
+
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+        if (json.length === 0) {
+          toast({ title: "Error", description: "The uploaded file is empty.", variant: "destructive" });
+          return;
+        }
+
+        const batch = writeBatch(db);
+        let studentsAdded = 0;
+
+        json.forEach(row => {
+          if (row.name && row.phone && row.email) {
+            const newStudent = {
+              name: String(row.name),
+              phone: String(row.phone),
+              email: String(row.email),
+              groupId: selectedGroupId,
+              callHistory: [],
+              createdBy: currentUser.id
+            };
+            const studentRef = doc(collection(db, 'students'));
+            batch.set(studentRef, newStudent);
+            studentsAdded++;
+          }
+        });
+
+        if (studentsAdded > 0) {
+          await batch.commit();
+          toast({ title: "Import Successful", description: `${studentsAdded} students have been imported.` });
+        } else {
+           toast({ title: "Import Failed", description: "No valid student data found. Make sure the file has 'name', 'phone', and 'email' columns.", variant: "destructive" });
+        }
+      } catch (error) {
+        console.error("Error importing students:", error);
+        toast({ title: "Error", description: "Failed to parse or import the file.", variant: "destructive" });
+      }
+      setImportDialogOpen(false);
+    };
+
+    reader.readAsBinaryString(file);
   };
 
   const totalCallsMade = useMemo(() => {
@@ -501,6 +559,24 @@ export default function DashboardPage() {
                           <Plus className="mr-2 h-4 w-4" /> Add Student
                         </Button>
                     </DialogTrigger>
+                    <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="w-full sm:w-auto flex-1 sm:flex-initial">
+                                <Upload className="mr-2 h-4 w-4" /> Import
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Import Students</DialogTitle>
+                                <DialogDescription>
+                                    Upload an XLSX file to add students in bulk. The file must have columns named 'name', 'phone', and 'email'.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <Input id="file" type="file" accept=".xlsx" onChange={handleFileUpload} />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </CardHeader>
@@ -646,5 +722,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
