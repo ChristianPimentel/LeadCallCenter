@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Logo } from "@/components/icons"
 import { useState, useEffect } from "react";
@@ -74,6 +75,7 @@ export default function DashboardLayout({
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-xs">
+            <DialogTitle className="sr-only">Navigation Menu</DialogTitle>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="#"
