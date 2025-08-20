@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Copy } from 'lucide-react';
+import { Plus, Copy, Trash2, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -96,6 +97,9 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [resetPasswordAlertOpen, setResetPasswordAlertOpen] = useState(false);
+
 
   const { toast } = useToast();
 
@@ -143,8 +147,10 @@ export default function UsersPage() {
     const name = formData.get('userName') as string;
     const email = formData.get('userEmail') as string;
     const role = formData.get('userRole') as 'Admin' | 'User';
+    const status = formData.get('userStatus') as 'Active' | 'Disabled';
+
     
-    const userData: Partial<User> = { name, email, role };
+    const userData: Partial<User> = { name, email, role, status };
 
     try {
       if (editingUser) {
@@ -182,6 +188,37 @@ export default function UsersPage() {
     toast({ title: "Copied!", description: "Password copied to clipboard." });
   };
   
+  const handleResetPassword = async () => {
+    if (!editingUser) return;
+    const newPassword = generatePassword();
+    try {
+        const userDoc = doc(db, 'users', editingUser.id);
+        await updateDoc(userDoc, { password: newPassword, passwordResetRequired: true });
+        setPasswordInfo({ name: editingUser.name, pass: newPassword });
+        setPasswordAlertOpen(true);
+        setResetPasswordAlertOpen(false);
+        setUserDialogOpen(false);
+        setEditingUser(null);
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        toast({ title: "Error", description: "Could not reset password.", variant: "destructive" });
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!editingUser) return;
+    try {
+        await deleteDoc(doc(db, 'users', editingUser.id));
+        toast({ title: "User Deleted", description: `${editingUser.name} has been deleted.` });
+        setDeleteAlertOpen(false);
+        setUserDialogOpen(false);
+        setEditingUser(null);
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        toast({ title: "Error", description: "Could not delete user.", variant: "destructive" });
+    }
+  }
+  
   const isAdmin = currentUser?.role === 'Admin';
 
   if (!currentUser) {
@@ -205,7 +242,7 @@ export default function UsersPage() {
 
   return (
     <div className="grid gap-6">
-      <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+      <Dialog open={userDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingUser(null); setUserDialogOpen(isOpen);}}>
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
           </div>
@@ -213,6 +250,7 @@ export default function UsersPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+              {editingUser && <DialogDescription>Manage user details and actions.</DialogDescription>}
             </DialogHeader>
             <form onSubmit={handleUserFormSubmit}>
               <div className="grid gap-4 py-4">
@@ -236,8 +274,36 @@ export default function UsersPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {editingUser && (
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="userStatus" className="text-right">Status</Label>
+                        <Select name="userStatus" defaultValue={editingUser?.status || 'Active'}>
+                            <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Disabled">Disabled</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
               </div>
-              <DialogFooter>
+              <DialogFooter className="sm:justify-between">
+                <div>
+                    {editingUser && currentUser?.id !== editingUser.id && (
+                        <div className="flex gap-2">
+                             <Button type="button" variant="outline" onClick={() => setResetPasswordAlertOpen(true)}>
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Reset Password
+                            </Button>
+                            <Button type="button" variant="destructive" onClick={() => setDeleteAlertOpen(true)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </Button>
+                        </div>
+                    )}
+                </div>
                 <Button type="submit">{editingUser ? 'Save Changes' : 'Add User'}</Button>
               </DialogFooter>
             </form>
@@ -259,17 +325,17 @@ export default function UsersPage() {
             </Card>
         
             <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                    <div className="grid gap-2">
-                        <CardTitle>Users</CardTitle>
-                        <CardDescription>Users with standard access.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-4">
+                         <CardTitle>Users</CardTitle>
+                        <DialogTrigger asChild>
+                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">Add User</span>
+                            </Button>
+                        </DialogTrigger>
                     </div>
-                    <DialogTrigger asChild>
-                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add User</span>
-                        </Button>
-                    </DialogTrigger>
+                    <CardDescription>Users with standard access.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <UserTable 
@@ -312,6 +378,41 @@ export default function UsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete User Confirmation */}
+       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account for <strong>{editingUser?.name}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Password Confirmation */}
+       <AlertDialog open={resetPasswordAlertOpen} onOpenChange={setResetPasswordAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the password for <strong>{editingUser?.name}</strong>? A new temporary password will be generated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetPassword}>Reset Password</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
+
+    
