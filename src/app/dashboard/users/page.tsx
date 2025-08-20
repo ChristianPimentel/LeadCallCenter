@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, KeyRound, UserX, UserCheck, Copy } from 'lucide-react';
+import { Plus, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -41,7 +41,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
@@ -54,7 +53,7 @@ const generatePassword = () => {
   return Math.random().toString(36).slice(-8);
 };
 
-const UserTable = ({ users, currentUser }: { users: User[], currentUser: User }) => {
+const UserTable = ({ users, currentUser, onUserClick }: { users: User[], currentUser: User, onUserClick: (user: User) => void }) => {
     return (
         <Table>
             <TableHeader>
@@ -66,7 +65,14 @@ const UserTable = ({ users, currentUser }: { users: User[], currentUser: User })
             </TableHeader>
             <TableBody>
               {users.map(user => (
-                <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
+                <TableRow 
+                  key={user.id} 
+                  className={cn(
+                    user.status === 'Disabled' && 'text-muted-foreground',
+                    "cursor-pointer"
+                  )}
+                  onClick={() => onUserClick(user)}
+                >
                   <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
                   <TableCell className="break-words">{user.email}</TableCell>
                   <TableCell>
@@ -165,6 +171,11 @@ export default function UsersPage() {
     setUserDialogOpen(false);
     setEditingUser(null);
   };
+
+  const handleUserClick = (user: User) => {
+    setEditingUser(user);
+    setUserDialogOpen(true);
+  };
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -198,7 +209,7 @@ export default function UsersPage() {
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
           </div>
-
+          
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
@@ -239,37 +250,33 @@ export default function UsersPage() {
                     <CardDescription>Users with full system access.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <TooltipProvider>
                     <UserTable 
                         users={admins} 
                         currentUser={currentUser}
+                        onUserClick={handleUserClick}
                     />
-                  </TooltipProvider>
                 </CardContent>
             </Card>
         
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-row items-start justify-between">
                     <div className="grid gap-2">
-                        <div className="flex items-center gap-2">
-                            <CardTitle>Users</CardTitle>
-                            <DialogTrigger asChild>
-                                <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                                    <Plus className="h-4 w-4" />
-                                    <span className="sr-only">Add User</span>
-                                </Button>
-                            </DialogTrigger>
-                        </div>
-                      <CardDescription>Users with standard access.</CardDescription>
+                        <CardTitle>Users</CardTitle>
+                        <CardDescription>Users with standard access.</CardDescription>
                     </div>
+                    <DialogTrigger asChild>
+                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                            <Plus className="h-4 w-4" />
+                            <span className="sr-only">Add User</span>
+                        </Button>
+                    </DialogTrigger>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <TooltipProvider>
                     <UserTable 
                         users={regularUsers} 
                         currentUser={currentUser}
+                        onUserClick={handleUserClick}
                     />
-                  </TooltipProvider>
                 </CardContent>
             </Card>
         </div>
