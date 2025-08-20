@@ -555,8 +555,8 @@ export default function DashboardPage() {
                 <CardTitle>{selectedGroup?.name} Overview</CardTitle>
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-start">
-                 <ChartContainer config={chartConfig} className="aspect-square h-[250px]">
+              <CardContent className="flex items-start justify-start">
+                 <ChartContainer config={chartConfig} className="aspect-square h-[250px] w-full">
                   <PieChart>
                     <ChartTooltip
                       cursor={false}
@@ -641,12 +641,72 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="md:hidden">
+                  {filteredStudents.length > 0 ? (
+                    <div className="divide-y">
+                      {filteredStudents.map(student => {
+                        const lastCall = student.callHistory[student.callHistory.length - 1];
+                        const status: CallStatus = lastCall?.status ?? 'Not Called';
+                        return (
+                          <div key={student.id} className="p-4 grid grid-cols-3 items-center gap-4">
+                            <div className="col-span-2">
+                              <div className="font-medium">{student.name}</div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="p-0 h-auto mt-1 -ml-1">
+                                    <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-2 w-fit cursor-pointer">
+                                        {getStatusIcon(status)}
+                                        {status}
+                                    </Badge>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}><PhoneCall className="mr-2 h-4 w-4" /> Called</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}><Voicemail className="mr-2 h-4 w-4" /> Voicemail</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}><PhoneMissed className="mr-2 h-4 w-4" /> Missed Call</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              {lastCall && <div className="text-xs text-muted-foreground mt-1">{lastCall.timestamp.toDate().toLocaleDateString()}</div>}
+                            </div>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button asChild variant="ghost" size="icon">
+                                <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)}>
+                                  <Phone className="h-5 w-5" />
+                                </a>
+                              </Button>
+                              <Button asChild variant="ghost" size="icon">
+                                <a href={`mailto:${student.email}`}>
+                                  <Mail className="h-5 w-5" />
+                                </a>
+                              </Button>
+                               <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreVertical className="h-5 w-5" />
+                                    <span className="sr-only">Toggle menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                     <div className="h-24 text-center flex items-center justify-center">
+                        No students found.
+                    </div>
+                  )}
+                </div>
+                <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">Contact</TableHead>
+                      <TableHead>Contact</TableHead>
                       <TableHead>Last Call Status</TableHead>
                       <TableHead><span className="sr-only">Actions</span></TableHead>
                     </TableRow>
@@ -659,16 +719,8 @@ export default function DashboardPage() {
                         <TableRow key={student.id}>
                           <TableCell>
                             <div className="font-medium">{student.name}</div>
-                            <div className="text-sm text-muted-foreground md:hidden flex flex-col gap-1 mt-1">
-                                <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
-                                    <Phone className="h-4 w-4"/> {student.phone}
-                                </a>
-                                <a href={`mailto:${student.email}`} className="flex items-center gap-2 hover:underline">
-                                    <Mail className="h-4 w-4"/> {student.email}
-                                </a>
-                            </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
+                          <TableCell>
                             <div className="flex items-center gap-2">
                                 <div className="flex flex-col">
                                     <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
