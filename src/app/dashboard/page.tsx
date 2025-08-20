@@ -643,11 +643,11 @@ export default function DashboardPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {canEditStudent && <>
+                                {canEditStudent && (
                                   <DialogTrigger asChild>
                                     <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
                                   </DialogTrigger>
-                                </>}
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -722,3 +722,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
