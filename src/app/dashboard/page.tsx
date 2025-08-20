@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Link from 'next/link';
 import {
   Users,
   Plus,
@@ -20,8 +19,6 @@ import {
   Users2,
   Settings,
   Upload,
-  Database,
-  ExternalLink
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
@@ -31,7 +28,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -70,7 +66,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import type { Group, Student, CallStatus, User as AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
@@ -83,7 +78,6 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
-import { cn } from '@/lib/utils';
 import { subMonths } from 'date-fns';
 
 const getStatusBadgeVariant = (status: CallStatus) => {
@@ -346,8 +340,8 @@ export default function DashboardPage() {
   };
   
   const handlePhoneClick = async (e: React.MouseEvent<HTMLAnchorElement>, studentId: string) => {
-      const href = e.currentTarget.href;
       e.preventDefault();
+      const href = e.currentTarget.href;
       await handleLogCall(studentId, 'Called');
       window.location.href = href;
   };
@@ -445,7 +439,7 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6">
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
@@ -464,7 +458,7 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold">{studentsForUser.length}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="sm:col-span-2 lg:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Calls Logged</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -584,7 +578,7 @@ export default function DashboardPage() {
         </div>
       </div>
     
-      <div className="xl:col-span-2">
+      <div>
         <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
           {selectedGroupId ? (
             <Card>
@@ -594,11 +588,11 @@ export default function DashboardPage() {
                         <CardTitle>{selectedGroup?.name} Students</CardTitle>
                         <CardDescription>Manage students in this group.</CardDescription>
                     </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-auto flex-1">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full">
                       <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as CallStatus | 'all')}>
-                        <SelectTrigger className="pl-8 w-full sm:w-[180px]">
+                        <SelectTrigger className="pl-8 w-full">
                           <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -611,13 +605,13 @@ export default function DashboardPage() {
                       </Select>
                     </div>
                      <DialogTrigger asChild>
-                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full sm:w-auto flex-1 sm:flex-initial">
+                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full">
                           <Plus className="mr-2 h-4 w-4" /> Add Student
                         </Button>
                     </DialogTrigger>
                     <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full sm:w-auto flex-1 sm:flex-initial">
+                            <Button variant="outline" className="w-full">
                                 <Upload className="mr-2 h-4 w-4" /> Import
                             </Button>
                         </DialogTrigger>
@@ -655,7 +649,14 @@ export default function DashboardPage() {
                         <TableRow key={student.id}>
                           <TableCell>
                             <div className="font-medium">{student.name}</div>
-                            <div className="text-sm text-muted-foreground md:hidden">{student.email}</div>
+                            <div className="text-sm text-muted-foreground md:hidden flex flex-col gap-1 mt-1">
+                                <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
+                                    <Phone className="h-4 w-4"/> {student.phone}
+                                </a>
+                                <div className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4"/> {student.email}
+                                </div>
+                            </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
