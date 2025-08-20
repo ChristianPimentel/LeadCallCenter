@@ -399,7 +399,7 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6">
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+       <div className={cn("grid gap-4 md:grid-cols-2", isAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
@@ -427,21 +427,23 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold">{totalCallsMade}</div>
             </CardContent>
           </Card>
-           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Database Storage</CardTitle>
-               <Database className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1 GiB</div>
-              <p className="text-xs text-muted-foreground">
-                Free plan limit. 
-                <Link href="https://console.firebase.google.com/" target="_blank" className="underline inline-flex items-center gap-1">
-                    Check usage <ExternalLink className="h-3 w-3" />
-                </Link>
-              </p>
-            </CardContent>
-          </Card>
+           {isAdmin && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Database Storage</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">1 GiB</div>
+                <p className="text-xs text-muted-foreground">
+                  Free plan limit. 
+                  <Link href="https://console.firebase.google.com/" target="_blank" className="underline inline-flex items-center gap-1">
+                      Check usage <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </p>
+              </CardContent>
+            </Card>
+           )}
         </div>
 
       <div className="grid gap-4 lg:grid-cols-5">
