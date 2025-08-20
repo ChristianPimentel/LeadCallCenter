@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link"
-import { Home, Users as UsersIcon, PanelLeft } from "lucide-react"
+import { Home, Users as UsersIcon, PanelLeft, UserCog } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,10 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Logo } from "@/components/icons"
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/types";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
   children,
@@ -23,6 +25,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     try {
@@ -36,6 +39,16 @@ export default function DashboardLayout({
   }, []);
   
   const isAdmin = currentUser?.role === 'Admin';
+
+  const navLinkClasses = (href: string) => cn(
+    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+    pathname === href && "text-primary bg-muted"
+  );
+  
+  const mobileNavLinkClasses = (href: string) => cn(
+    "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
+     pathname === href && "bg-muted text-foreground"
+  );
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -51,7 +64,7 @@ export default function DashboardLayout({
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                className={navLinkClasses("/dashboard")}
               >
                 <Home className="h-4 w-4" />
                 Groups
@@ -59,12 +72,19 @@ export default function DashboardLayout({
               {isAdmin && (
                 <Link
                   href="/dashboard/users"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  className={navLinkClasses("/dashboard/users")}
                 >
                   <UsersIcon className="h-4 w-4" />
                   Users
                 </Link>
               )}
+               <Link
+                href="/dashboard/account"
+                className={navLinkClasses("/dashboard/account")}
+              >
+                <UserCog className="h-4 w-4" />
+                Manage Account
+              </Link>
             </nav>
           </div>
         </div>
@@ -86,14 +106,14 @@ export default function DashboardLayout({
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
+                  className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
                   <Logo className="h-6 w-6" />
-                  <span className="sr-only">CallFlow</span>
+                  <span className="">CallFlow</span>
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  className={mobileNavLinkClasses("/dashboard")}
                 >
                   <Home className="h-5 w-5" />
                   Groups
@@ -101,12 +121,19 @@ export default function DashboardLayout({
                 {isAdmin && (
                   <Link
                     href="/dashboard/users"
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                    className={mobileNavLinkClasses("/dashboard/users")}
                   >
                     <UsersIcon className="h-5 w-5" />
                     Users
                   </Link>
                 )}
+                <Link
+                  href="/dashboard/account"
+                  className={mobileNavLinkClasses("/dashboard/account")}
+                >
+                  <UserCog className="h-5 w-5" />
+                  Manage Account
+                </Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -123,8 +150,9 @@ export default function DashboardLayout({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account ({currentUser?.role})</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <Link href="/dashboard/account">
+                <DropdownMenuItem>Manage Account</DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <Link href="/">
                 <DropdownMenuItem>Logout</DropdownMenuItem>
