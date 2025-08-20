@@ -546,7 +546,7 @@ export default function DashboardPage() {
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-center">
-                 <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                 <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px] w-full">
                   <PieChart>
                     <ChartTooltip
                       cursor={false}
