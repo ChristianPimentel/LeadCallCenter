@@ -477,7 +477,7 @@ export default function DashboardPage() {
                     <CardTitle>Groups</CardTitle>
                     <CardDescription>Select a group to view students.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-row gap-2">
+                <CardContent className="flex flex-row items-center gap-2">
                     <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
                         <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Select a group" />
@@ -546,7 +546,7 @@ export default function DashboardPage() {
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-center">
-                 <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px] w-full">
+                 <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
                   <PieChart>
                     <ChartTooltip
                       cursor={false}
@@ -774,3 +774,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
