@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Edit, Trash2, Copy } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Copy, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import {
   Table,
@@ -107,10 +108,6 @@ export default function UsersPage() {
 
     try {
       if (editingUser) {
-        const password = formData.get('userPassword') as string;
-        if (password) {
-            userData.password = password;
-        }
         const userDoc = doc(db, 'users', editingUser.id);
         await updateDoc(userDoc, userData);
         toast({ title: "User Updated", description: `${name}'s profile has been updated.` });
@@ -151,6 +148,23 @@ export default function UsersPage() {
     }
     setDeleteUserAlertOpen(false);
     setDeletingUserId(null);
+  };
+
+  const handlePasswordReset = async (user: User) => {
+    try {
+        const newPassword = generatePassword();
+        const userDoc = doc(db, 'users', user.id);
+        await updateDoc(userDoc, {
+            password: newPassword,
+            passwordResetRequired: true
+        });
+        setPasswordInfo({ name: user.name, pass: newPassword });
+        setPasswordAlertOpen(true);
+        toast({ title: "Password Reset", description: `A new temporary password has been generated for ${user.name}.` });
+    } catch (error) {
+        console.error("Error resetting password: ", error);
+        toast({ title: "Error", description: "Could not reset password.", variant: "destructive" });
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -206,12 +220,6 @@ export default function UsersPage() {
                   <Label htmlFor="userEmail" className="text-right">Email</Label>
                   <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required />
                 </div>
-                {editingUser && (
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="userPassword" className="text-right">Password</Label>
-                        <Input id="userPassword" name="userPassword" type="password" placeholder="Leave blank to keep unchanged" className="col-span-3" />
-                    </div>
-                )}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userRole" className="text-right">Role</Label>
                   <Select name="userRole" defaultValue={editingUser?.role || 'User'}>
@@ -256,7 +264,7 @@ export default function UsersPage() {
                   <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.id === currentUser.id}>
                             <MoreVertical className="h-4 w-4" />
                             <span className="sr-only">Toggle menu</span>
                           </Button>
@@ -265,6 +273,10 @@ export default function UsersPage() {
                            <DropdownMenuItem onClick={() => { setEditingUser(user); setUserDialogOpen(true); }}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePasswordReset(user)}>
+                                <KeyRound className="mr-2 h-4 w-4" /> Reset Password
+                            </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => { setDeletingUserId(user.id); setDeleteUserAlertOpen(true); }}
@@ -302,9 +314,9 @@ export default function UsersPage() {
       <AlertDialog open={passwordAlertOpen} onOpenChange={setPasswordAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>User Created Successfully</AlertDialogTitle>
+            <AlertDialogTitle>Temporary Password</AlertDialogTitle>
             <AlertDialogDescription>
-              Please copy the temporary password for <strong>{passwordInfo?.name}</strong> and share it with them. They will be required to change it upon their first login.
+              Please copy the temporary password for <strong>{passwordInfo?.name}</strong> and share it with them. They will be required to change it upon their next login.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="relative my-4">
