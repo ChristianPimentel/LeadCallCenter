@@ -357,11 +357,8 @@ export default function UsersPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <div className="grid gap-1">
+                         <div className="flex items-center gap-2">
                             <CardTitle>Users</CardTitle>
-                            <CardDescription>Users with standard access.</CardDescription>
-                        </div>
-                        <div>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
                                     <Plus className="h-4 w-4" />
@@ -370,6 +367,7 @@ export default function UsersPage() {
                             </DialogTrigger>
                         </div>
                     </div>
+                    <CardDescription>Users with standard access.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                 <UserTable 
@@ -434,3 +432,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+    
