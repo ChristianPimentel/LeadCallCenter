@@ -232,6 +232,25 @@ export default function DashboardPage() {
      if (!selectedGroupId) return [];
      return allStudents.filter(s => s.groupId === selectedGroupId);
   }, [allStudents, selectedGroupId]);
+  
+  const statusCounts = React.useMemo(() => {
+    const counts: { [key in CallStatus | 'all']: number } = {
+      'all': studentsInSelectedGroup.length,
+      'Not Called': 0,
+      'Called': 0,
+      'Voicemail': 0,
+      'Missed Call': 0,
+    };
+
+    studentsInSelectedGroup.forEach(student => {
+      const lastStatus = student.callHistory.length > 0 
+        ? student.callHistory[student.callHistory.length - 1].status 
+        : 'Not Called';
+      counts[lastStatus]++;
+    });
+
+    return counts;
+  }, [studentsInSelectedGroup]);
 
   const filteredStudents = React.useMemo(() => {
     if (!selectedGroupId || !currentUser) return [];
@@ -606,11 +625,11 @@ export default function DashboardPage() {
                           <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="Not Called">Not Called</SelectItem>
-                          <SelectItem value="Called">Called</SelectItem>
-                          <SelectItem value="Voicemail">Voicemail</SelectItem>
-                          <SelectItem value="Missed Call">Missed Call</SelectItem>
+                          <SelectItem value="all">All Statuses ({statusCounts.all})</SelectItem>
+                          <SelectItem value="Not Called">Not Called ({statusCounts['Not Called']})</SelectItem>
+                          <SelectItem value="Called">Called ({statusCounts.Called})</SelectItem>
+                          <SelectItem value="Voicemail">Voicemail ({statusCounts.Voicemail})</SelectItem>
+                          <SelectItem value="Missed Call">Missed Call ({statusCounts['Missed Call']})</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -852,3 +871,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
