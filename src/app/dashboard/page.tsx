@@ -26,6 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -533,10 +534,27 @@ export default function DashboardPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-2 w-fit">
-                                {getStatusIcon(status)}
-                                {status}
-                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto">
+                                  <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-2 w-fit cursor-pointer">
+                                      {getStatusIcon(status)}
+                                      {status}
+                                  </Badge>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}>
+                                    <PhoneCall className="mr-2 h-4 w-4" /> Called
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>
+                                    <Voicemail className="mr-2 h-4 w-4" /> Voicemail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>
+                                    <PhoneMissed className="mr-2 h-4 w-4" /> Missed Call
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                              {lastCall && <div className="text-xs text-muted-foreground mt-1">{lastCall.timestamp.toDate().toLocaleString()}</div>}
                           </TableCell>
                           <TableCell>
@@ -548,11 +566,7 @@ export default function DashboardPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}>Log "Called"</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>Log "Voicemail"</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>Log "Missed Call"</DropdownMenuItem>
                                 {canEditStudent && <>
-                                  <Separator />
                                   <DialogTrigger asChild>
                                     <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
                                   </DialogTrigger>
