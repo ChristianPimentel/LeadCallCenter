@@ -545,7 +545,7 @@ export default function DashboardPage() {
                 <CardTitle>{selectedGroup?.name} Overview</CardTitle>
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-start">
+              <CardContent className="flex justify-start">
                  <ChartContainer config={chartConfig} className="aspect-square h-[250px]">
                   <PieChart>
                     <ChartTooltip
@@ -630,7 +630,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
