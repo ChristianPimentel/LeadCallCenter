@@ -339,47 +339,48 @@ export default function UsersPage() {
             </form>
           </DialogContent>
         
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Administrators</CardTitle>
-                <CardDescription>Users with full system access.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-            <UserTable 
-                users={admins} 
-                currentUser={currentUser}
-                onEdit={handleEditUserClick}
-                onPasswordReset={handlePasswordReset}
-                onToggleStatus={handleToggleUserStatus}
-                onDelete={handleDeleteUserClick}
-            />
-            </CardContent>
-        </Card>
-      
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Users</CardTitle>
-                    <CardDescription>Users with standard access.</CardDescription>
-                </div>
-                <DialogTrigger asChild>
-                    <Button onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" /> Add User
-                    </Button>
-                </DialogTrigger>
-            </CardHeader>
-            <CardContent className="p-0">
-            <UserTable 
-                users={regularUsers} 
-                currentUser={currentUser}
-                onEdit={handleEditUserClick}
-                onPasswordReset={handlePasswordReset}
-                onToggleStatus={handleToggleUserStatus}
-                onDelete={handleDeleteUserClick}
-            />
-            </CardContent>
-        </Card>
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Administrators</CardTitle>
+                    <CardDescription>Users with full system access.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                <UserTable 
+                    users={admins} 
+                    currentUser={currentUser}
+                    onEdit={handleEditUserClick}
+                    onPasswordReset={handlePasswordReset}
+                    onToggleStatus={handleToggleUserStatus}
+                    onDelete={handleDeleteUserClick}
+                />
+                </CardContent>
+            </Card>
+        
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Users</CardTitle>
+                        <CardDescription>Users with standard access.</CardDescription>
+                    </div>
+                    <DialogTrigger asChild>
+                        <Button onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" /> Add User
+                        </Button>
+                    </DialogTrigger>
+                </CardHeader>
+                <CardContent className="p-0">
+                <UserTable 
+                    users={regularUsers} 
+                    currentUser={currentUser}
+                    onEdit={handleEditUserClick}
+                    onPasswordReset={handlePasswordReset}
+                    onToggleStatus={handleToggleUserStatus}
+                    onDelete={handleDeleteUserClick}
+                />
+                </CardContent>
+            </Card>
+        </div>
       </Dialog>
       
       {/* Delete User Alert */}
