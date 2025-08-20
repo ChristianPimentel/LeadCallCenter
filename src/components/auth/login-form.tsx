@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -19,10 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { User } from '@/lib/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Mock users for demo purposes
-const mockUsers: User[] = [
+// Mock users for demo purposes, used only if localStorage is empty.
+const initialUsers: User[] = [
   { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
   { id: '2', name: 'Regular User', email: 'user@example.com', role: 'User' },
 ];
@@ -31,21 +32,29 @@ const mockUsers: User[] = [
 export function LoginForm() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<'Admin' | 'User'>('User');
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    // On component mount, check localStorage for existing users.
+    const storedUsers = localStorage.getItem('callflow-users');
+    if (storedUsers) {
+      setUsers(JSON.parse(storedUsers));
+    } else {
+      // If no users are found, seed localStorage with initial data.
+      localStorage.setItem('callflow-users', JSON.stringify(initialUsers));
+      setUsers(initialUsers);
+    }
+  }, []);
 
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // In a real app, you'd handle authentication here.
-    const userToLogin = mockUsers.find(u => u.role === selectedRole);
+    const userToLogin = users.find(u => u.role === selectedRole);
     if (userToLogin) {
       localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
     }
     
-    // Seed users if they don't exist
-    if (!localStorage.getItem('callflow-users')) {
-      localStorage.setItem('callflow-users', JSON.stringify(mockUsers));
-    }
-
     router.push('/dashboard');
   };
 
@@ -54,7 +63,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Enter your details below to login to your account.
+          Select a role to log in. Your data will be saved in this browser.
         </CardDescription>
       </CardHeader>
       <CardContent>
