@@ -1,10 +1,10 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, MoreVertical, Edit, Trash2, Copy, KeyRound, UserX, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +59,73 @@ const generatePassword = () => {
   return Math.random().toString(36).slice(-8);
 };
 
+const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus, onDelete }: { users: User[], currentUser: User, onEdit: (user: User) => void, onPasswordReset: (user: User) => void, onToggleStatus: (user: User) => void, onDelete: (user: User) => void }) => {
+    return (
+        <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map(user => (
+                <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
+                  <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
+                      {user.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
+                      {user.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.id === currentUser.id}>
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => onEdit(user)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onPasswordReset(user)}>
+                                <KeyRound className="mr-2 h-4 w-4" /> Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onToggleStatus(user)}>
+                                {user.status === 'Active' ? (
+                                    <><UserX className="mr-2 h-4 w-4" /> Disable</>
+                                ) : (
+                                    <><UserCheck className="mr-2 h-4 w-4" /> Enable</>
+                                )}
+                            </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => onDelete(user)}
+                            disabled={user.id === currentUser.id}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+        </Table>
+    )
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -97,6 +164,19 @@ export default function UsersPage() {
 
     return () => unsubscribe();
   }, [currentUser]);
+  
+  const { admins, regularUsers } = useMemo(() => {
+    const admins: User[] = [];
+    const regularUsers: User[] = [];
+    users.forEach(user => {
+      if (user.role === 'Admin') {
+        admins.push(user);
+      } else {
+        regularUsers.push(user);
+      }
+    });
+    return { admins, regularUsers };
+  }, [users]);
 
   const handleUserFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -151,6 +231,17 @@ export default function UsersPage() {
     setDeleteUserAlertOpen(false);
     setDeletingUserId(null);
   };
+  
+  const handleEditUserClick = (user: User) => {
+    setEditingUser(user);
+    setUserDialogOpen(true);
+  };
+  
+  const handleDeleteUserClick = (user: User) => {
+    setDeletingUserId(user.id);
+    setDeleteUserAlertOpen(true);
+  };
+
 
   const handlePasswordReset = async (user: User) => {
     try {
@@ -212,7 +303,7 @@ export default function UsersPage() {
   }
 
   return (
-    <>
+    <div className="grid gap-6">
       <div className="flex items-center justify-between">
         <div>
             <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
@@ -258,70 +349,38 @@ export default function UsersPage() {
           </DialogContent>
         </Dialog>
       </div>
+
       <Card>
+        <CardHeader>
+            <CardTitle>Administrators</CardTitle>
+            <CardDescription>Users with full system access.</CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map(user => (
-                <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
-                  <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.id === currentUser.id}>
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuItem onClick={() => { setEditingUser(user); setUserDialogOpen(true); }}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePasswordReset(user)}>
-                                <KeyRound className="mr-2 h-4 w-4" /> Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleUserStatus(user)}>
-                                {user.status === 'Active' ? (
-                                    <><UserX className="mr-2 h-4 w-4" /> Disable</>
-                                ) : (
-                                    <><UserCheck className="mr-2 h-4 w-4" /> Enable</>
-                                )}
-                            </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => { setDeletingUserId(user.id); setDeleteUserAlertOpen(true); }}
-                            disabled={user.id === currentUser.id}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <UserTable 
+            users={admins} 
+            currentUser={currentUser}
+            onEdit={handleEditUserClick}
+            onPasswordReset={handlePasswordReset}
+            onToggleStatus={handleToggleUserStatus}
+            onDelete={handleDeleteUserClick}
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>Users with standard access.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <UserTable 
+            users={regularUsers} 
+            currentUser={currentUser}
+            onEdit={handleEditUserClick}
+            onPasswordReset={handlePasswordReset}
+            onToggleStatus={handleToggleUserStatus}
+            onDelete={handleDeleteUserClick}
+          />
         </CardContent>
       </Card>
       
@@ -371,6 +430,8 @@ export default function UsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }
+
+    
