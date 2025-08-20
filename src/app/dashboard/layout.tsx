@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link"
-import { Home, Users as UsersIcon, PanelLeft, UserCog } from "lucide-react"
+import { Home, Users as UsersIcon, PanelLeft, UserCog, LifeBuoy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -111,6 +111,14 @@ export default function DashboardLayout({
                 <UserCog className="h-5 w-5" />
                 Manage Account
               </Link>
+               <Link
+                href="/dashboard/help"
+                onClick={() => setIsSheetOpen(false)}
+                className={mobileNavLinkClasses("/dashboard/help")}
+              >
+                <LifeBuoy className="h-5 w-5" />
+                Help
+              </Link>
             </nav>
           </SheetContent>
         </Sheet>
@@ -142,6 +150,12 @@ export default function DashboardLayout({
                 className={navLinkClasses("/dashboard/account")}
               >
                 Manage Account
+              </Link>
+              <Link
+                href="/dashboard/help"
+                className={navLinkClasses("/dashboard/help")}
+              >
+                Help
               </Link>
         </nav>
 
