@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link"
 import { Home, Users as UsersIcon, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,12 +14,29 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/icons"
+import { useState, useEffect } from "react";
+import type { User } from "@/lib/types";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('callflow-currentUser');
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+    }
+  }, []);
+  
+  const isAdmin = currentUser?.role === 'Admin';
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -37,13 +56,15 @@ export default function DashboardLayout({
                 <Home className="h-4 w-4" />
                 Groups
               </Link>
-              <Link
-                href="/dashboard/users"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <UsersIcon className="h-4 w-4" />
-                Users
-              </Link>
+              {isAdmin && (
+                <Link
+                  href="/dashboard/users"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <UsersIcon className="h-4 w-4" />
+                  Users
+                </Link>
+              )}
             </nav>
           </div>
         </div>
@@ -77,13 +98,15 @@ export default function DashboardLayout({
                   <Home className="h-5 w-5" />
                   Groups
                 </Link>
-                <Link
-                  href="/dashboard/users"
-                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                  <UsersIcon className="h-5 w-5" />
-                  Users
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/dashboard/users"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <UsersIcon className="h-5 w-5" />
+                    Users
+                  </Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
@@ -92,18 +115,20 @@ export default function DashboardLayout({
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarFallback>AD</AvatarFallback>
+                  <AvatarFallback>{currentUser?.name?.charAt(0) ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>My Account ({currentUser?.role})</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <Link href="/">
+                <DropdownMenuItem>Logout</DropdownMenuItem>
+              </Link>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

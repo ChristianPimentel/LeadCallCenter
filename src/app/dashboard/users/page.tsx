@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +75,9 @@ export default function UsersPage() {
 
       if (storedCurrentUser) {
         setCurrentUser(JSON.parse(storedCurrentUser));
+      } else {
+         window.location.href = '/';
+         return;
       }
       setUsers(storedUsers ? JSON.parse(storedUsers) : initialUsers);
     } catch (error) {
@@ -110,6 +113,11 @@ export default function UsersPage() {
 
   const handleDeleteUser = () => {
     if (!deletingUserId) return;
+    if (deletingUserId === currentUser?.id) {
+        toast({ title: "Cannot delete self", description: "You cannot delete your own user account.", variant: "destructive" });
+        setDeleteUserAlertOpen(false);
+        return;
+    }
     setUsers(users.filter(u => u.id !== deletingUserId));
     toast({ title: "User Deleted", description: "The user has been deleted." });
     setDeleteUserAlertOpen(false);
@@ -118,13 +126,13 @@ export default function UsersPage() {
 
   const isAdmin = currentUser?.role === 'Admin';
 
-  if (!isClient) {
+  if (!isClient || !currentUser) {
     return null; // or a loading spinner
   }
   
   if (!isAdmin) {
     return (
-        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full min-h-[60vh]">
             <div className="flex flex-col items-center gap-1 text-center">
                 <h3 className="text-2xl font-bold tracking-tight">
                     Access Denied
@@ -199,7 +207,7 @@ export default function UsersPage() {
             <TableBody>
               {users.map(user => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
@@ -207,7 +215,6 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Dialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -216,52 +223,18 @@ export default function UsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem onClick={() => { setEditingUser(user); setUserDialogOpen(true); }}>
+                           <DropdownMenuItem onClick={() => { setEditingUser(user); setUserDialogOpen(true); }}>
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
-                          </DialogTrigger>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => { setDeletingUserId(user.id); setDeleteUserAlertOpen(true); }}
+                            disabled={user.id === currentUser.id}
                           >
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                       <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit User</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleUserFormSubmit}>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="userName" className="text-right">Name</Label>
-                              <Input id="userName" name="userName" defaultValue={editingUser?.name} className="col-span-3" required />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="userEmail" className="text-right">Email</Label>
-                              <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required />
-                            </div>
-                             <div className="grid grid-cols-4 items-center gap-4">
-                               <Label htmlFor="userRole" className="text-right">Role</Label>
-                               <Select name="userRole" defaultValue={editingUser?.role}>
-                                 <SelectTrigger className="col-span-3">
-                                   <SelectValue placeholder="Select a role" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                   <SelectItem value="Admin">Admin</SelectItem>
-                                   <SelectItem value="User">User</SelectItem>
-                                 </SelectContent>
-                               </Select>
-                             </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="submit">Save Changes</Button>
-                          </DialogFooter>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}

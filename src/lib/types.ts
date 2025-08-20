@@ -12,11 +12,13 @@ export type Student = {
   email: string;
   groupId: string;
   callHistory: CallRecord[];
+  createdBy: string; // User ID
 };
 
 export type Group = {
   id: string;
   name: string;
+  createdBy: string; // User ID
 };
 
 export type User = {

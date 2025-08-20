@@ -64,19 +64,20 @@ import { useToast } from '@/hooks/use-toast';
 
 
 const initialGroups: Group[] = [
-  { id: '1', name: 'Fall 2024 Admissions' },
-  { id: '2', name: 'Spring 2025 Applicants' },
-  { id: '3', name: 'Scholarship Candidates' },
+  { id: '1', name: 'Fall 2024 Admissions', createdBy: '1' }, // Admin
+  { id: '2', name: 'Spring 2025 Applicants', createdBy: '1' }, // Admin
+  { id: '3', name: 'Scholarship Candidates', createdBy: '2' }, // User
 ];
 
 const initialStudents: Student[] = [
-  { id: '101', name: 'Alice Johnson', phone: '555-0101', email: 'alice@example.com', groupId: '1', callHistory: [{ status: 'Called', timestamp: new Date(Date.now() - 86400000 * 2).toISOString() }] },
-  { id: '102', name: 'Bob Williams', phone: '555-0102', email: 'bob@example.com', groupId: '1', callHistory: [{ status: 'Voicemail', timestamp: new Date(Date.now() - 86400000 * 1).toISOString() }] },
-  { id: '103', name: 'Charlie Brown', phone: '555-0103', email: 'charlie@example.com', groupId: '1', callHistory: [] },
-  { id: '201', name: 'Diana Miller', phone: '555-0104', email: 'diana@example.com', groupId: '2', callHistory: [{ status: 'Missed Call', timestamp: new Date().toISOString() }] },
-  { id: '202', name: 'Ethan Davis', phone: '555-0105', email: 'ethan@example.com', groupId: '2', callHistory: [] },
-  { id: '301', name: 'Fiona Garcia', phone: '555-0106', email: 'fiona@example.com', groupId: '3', callHistory: [] },
+  { id: '101', name: 'Alice Johnson', phone: '555-0101', email: 'alice@example.com', groupId: '1', callHistory: [{ status: 'Called', timestamp: new Date(Date.now() - 86400000 * 2).toISOString() }], createdBy: '1' },
+  { id: '102', name: 'Bob Williams', phone: '555-0102', email: 'bob@example.com', groupId: '1', callHistory: [{ status: 'Voicemail', timestamp: new Date(Date.now() - 86400000 * 1).toISOString() }], createdBy: '1' },
+  { id: '103', name: 'Charlie Brown', phone: '555-0103', email: 'charlie@example.com', groupId: '1', callHistory: [], createdBy: '1' },
+  { id: '201', name: 'Diana Miller', phone: '555-0104', email: 'diana@example.com', groupId: '2', callHistory: [{ status: 'Missed Call', timestamp: new Date().toISOString() }], createdBy: '1' },
+  { id: '202', name: 'Ethan Davis', phone: '555-0105', email: 'ethan@example.com', groupId: '2', callHistory: [], createdBy: '1' },
+  { id: '301', name: 'Fiona Garcia', phone: '555-0106', email: 'fiona@example.com', groupId: '3', callHistory: [], createdBy: '2' },
 ];
+
 
 const getStatusBadgeVariant = (status: CallStatus) => {
   switch (status) {
@@ -97,8 +98,8 @@ const getStatusIcon = (status: CallStatus) => {
 };
 
 export default function DashboardPage() {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<CallStatus | 'all'>('all');
   const [isClient, setIsClient] = useState(false);
@@ -123,58 +124,77 @@ export default function DashboardPage() {
 
       if (storedUser) {
         setCurrentUser(JSON.parse(storedUser));
+      } else {
+        // Redirect to login if no user
+        window.location.href = '/';
+        return;
       }
       
-      const loadedGroups = storedGroups ? JSON.parse(storedGroups) : initialGroups;
-      setGroups(loadedGroups);
+      setAllGroups(storedGroups ? JSON.parse(storedGroups) : initialGroups);
+      setAllStudents(storedStudents ? JSON.parse(storedStudents) : initialStudents);
 
-      if (loadedGroups.length > 0 && !selectedGroupId) {
-        setSelectedGroupId(loadedGroups[0].id);
-      }
-      
-      setStudents(storedStudents ? JSON.parse(storedStudents) : initialStudents);
     } catch (error) {
       console.error("Failed to parse from localStorage", error);
-      setGroups(initialGroups);
-      setStudents(initialStudents);
-       if (initialGroups.length > 0) {
-        setSelectedGroupId(initialGroups[0].id);
-      }
+      setAllGroups(initialGroups);
+      setAllStudents(initialStudents);
     }
   }, []);
+
+  const isAdmin = currentUser?.role === 'Admin';
+
+  const userGroups = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return allGroups;
+    return allGroups.filter(g => g.createdBy === currentUser.id);
+  }, [allGroups, currentUser, isAdmin]);
+
+  useEffect(() => {
+    if (userGroups.length > 0 && !userGroups.find(g => g.id === selectedGroupId)) {
+        setSelectedGroupId(userGroups[0].id);
+    } else if (userGroups.length === 0) {
+        setSelectedGroupId(null);
+    }
+  }, [userGroups, selectedGroupId]);
   
   useEffect(() => {
     if(isClient) {
-      localStorage.setItem('callflow-groups', JSON.stringify(groups));
-      localStorage.setItem('callflow-students', JSON.stringify(students));
+      localStorage.setItem('callflow-groups', JSON.stringify(allGroups));
+      localStorage.setItem('callflow-students', JSON.stringify(allStudents));
     }
-  }, [groups, students, isClient]);
+  }, [allGroups, allStudents, isClient]);
 
 
-  const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
+  const selectedGroup = useMemo(() => userGroups.find(g => g.id === selectedGroupId), [userGroups, selectedGroupId]);
   
   const filteredStudents = useMemo(() => {
-    if (!selectedGroupId) return [];
-    return students
-      .filter(s => s.groupId === selectedGroupId)
-      .filter(s => {
+    if (!selectedGroupId || !currentUser) return [];
+    
+    let studentsInGroup = allStudents.filter(s => s.groupId === selectedGroupId);
+    
+    // Non-admins should only see students they created, even within a group.
+    // This logic might need adjustment based on desired collaboration rules.
+    // For now, if a user can see a group, they see all students in it.
+    
+    return studentsInGroup.filter(s => {
         if (filterStatus === 'all') return true;
         const lastCallStatus = s.callHistory[s.callHistory.length - 1]?.status ?? 'Not Called';
         return lastCallStatus === filterStatus;
       });
-  }, [students, selectedGroupId, filterStatus]);
+  }, [allStudents, selectedGroupId, filterStatus, currentUser, isAdmin]);
 
   const handleGroupFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!currentUser) return;
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get('groupName') as string;
     
     if (editingGroup) {
-      setGroups(groups.map(g => g.id === editingGroup.id ? { ...g, name } : g));
+      setAllGroups(allGroups.map(g => g.id === editingGroup.id ? { ...g, name } : g));
       toast({ title: "Group Updated", description: `Group "${name}" has been updated.`});
     } else {
-      const newGroup: Group = { id: Date.now().toString(), name };
-      setGroups([...groups, newGroup]);
+      const newGroup: Group = { id: Date.now().toString(), name, createdBy: currentUser.id };
+      setAllGroups([...allGroups, newGroup]);
       toast({ title: "Group Created", description: `Group "${name}" has been created.`});
     }
     setGroupDialogOpen(false);
@@ -183,10 +203,11 @@ export default function DashboardPage() {
   
   const handleDeleteGroup = () => {
     if (!deletingGroupId) return;
-    setGroups(groups.filter(g => g.id !== deletingGroupId));
-    setStudents(students.filter(s => s.groupId !== deletingGroupId));
+    setAllGroups(allGroups.filter(g => g.id !== deletingGroupId));
+    setAllStudents(allStudents.filter(s => s.groupId !== deletingGroupId));
     if (selectedGroupId === deletingGroupId) {
-      setSelectedGroupId(groups.length > 1 ? groups.find(g => g.id !== deletingGroupId)!.id : null);
+      const remainingGroups = userGroups.filter(g => g.id !== deletingGroupId);
+      setSelectedGroupId(remainingGroups.length > 0 ? remainingGroups[0].id : null);
     }
     toast({ title: "Group Deleted", description: "The group and its students have been deleted."});
     setDeleteGroupAlertOpen(false);
@@ -195,17 +216,18 @@ export default function DashboardPage() {
 
   const handleStudentFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!currentUser) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get('studentName') as string;
     const phone = formData.get('studentPhone') as string;
     const email = formData.get('studentEmail') as string;
 
     if (editingStudent) {
-      setStudents(students.map(s => s.id === editingStudent.id ? { ...s, name, phone, email } : s));
+      setAllStudents(allStudents.map(s => s.id === editingStudent.id ? { ...s, name, phone, email } : s));
       toast({ title: "Student Updated", description: `${name}'s profile has been updated.` });
     } else {
-      const newStudent: Student = { id: Date.now().toString(), name, phone, email, groupId: selectedGroupId!, callHistory: [] };
-      setStudents([...students, newStudent]);
+      const newStudent: Student = { id: Date.now().toString(), name, phone, email, groupId: selectedGroupId!, callHistory: [], createdBy: currentUser.id };
+      setAllStudents([...allStudents, newStudent]);
       toast({ title: "Student Added", description: `${name} has been added to the group.` });
     }
     setStudentDialogOpen(false);
@@ -213,7 +235,7 @@ export default function DashboardPage() {
   };
 
   const handleLogCall = (studentId: string, status: CallStatus) => {
-    setStudents(students.map(s => {
+    setAllStudents(allStudents.map(s => {
       if (s.id === studentId) {
         return {
           ...s,
@@ -224,10 +246,8 @@ export default function DashboardPage() {
     }));
     toast({ title: "Call Logged", description: `Call status for student updated to "${status}".` });
   };
-
-  const isAdmin = currentUser?.role === 'Admin';
   
-  if (!isClient) {
+  if (!isClient || !currentUser) {
     return null; // or a loading spinner
   }
 
@@ -241,13 +261,11 @@ export default function DashboardPage() {
                 <CardTitle>Groups</CardTitle>
                 <CardDescription>Select a group to view students.</CardDescription>
               </div>
-              {isAdmin && (
-                <DialogTrigger asChild>
-                  <Button size="sm" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Group
-                  </Button>
-                </DialogTrigger>
-              )}
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
+                  <Plus className="mr-2 h-4 w-4" /> Add Group
+                </Button>
+              </DialogTrigger>
             </CardHeader>
             <CardContent>
               <Table>
@@ -255,12 +273,12 @@ export default function DashboardPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Students</TableHead>
-                    {isAdmin && <TableHead><span className="sr-only">Actions</span></TableHead>}
+                    <TableHead><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {groups.map(group => {
-                    const groupStudents = students.filter(s => s.groupId === group.id);
+                  {userGroups.map(group => {
+                    const groupStudents = allStudents.filter(s => s.groupId === group.id);
                     return (
                       <TableRow
                         key={group.id}
@@ -269,8 +287,8 @@ export default function DashboardPage() {
                       >
                         <TableCell className="font-medium">{group.name}</TableCell>
                         <TableCell>{groupStudents.length}</TableCell>
-                        {isAdmin && (
-                          <TableCell>
+                        <TableCell>
+                           {(isAdmin || currentUser.id === group.createdBy) && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0" onClick={e => e.stopPropagation()}>
@@ -286,8 +304,8 @@ export default function DashboardPage() {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </TableCell>
-                        )}
+                           )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -363,6 +381,7 @@ export default function DashboardPage() {
                     {filteredStudents.length > 0 ? filteredStudents.map(student => {
                       const lastCall = student.callHistory[student.callHistory.length - 1];
                       const status: CallStatus = lastCall?.status ?? 'Not Called';
+                      const canEditStudent = isAdmin || currentUser.id === student.createdBy;
                       return (
                         <TableRow key={student.id}>
                           <TableCell>
@@ -396,7 +415,7 @@ export default function DashboardPage() {
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}>Log "Called"</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>Log "Voicemail"</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>Log "Missed Call"</DropdownMenuItem>
-                                {isAdmin && <>
+                                {canEditStudent && <>
                                   <Separator />
                                   <DialogTrigger asChild>
                                     <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
@@ -427,7 +446,7 @@ export default function DashboardPage() {
                         No group selected
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                        Select a group to view students.
+                        {userGroups.length > 0 ? "Select a group to view students." : "Create a group to get started."}
                     </p>
                 </div>
             </div>
