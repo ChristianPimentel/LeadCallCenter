@@ -40,25 +40,6 @@ export default function AccountPage() {
       console.error("Failed to parse user from localStorage", error);
     }
   }, []);
-
-  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    
-    try {
-      const userDoc = doc(db, 'users', currentUser.id);
-      await updateDoc(userDoc, { name, email });
-      
-      const updatedUser = { ...currentUser, name, email };
-      localStorage.setItem('callflow-currentUser', JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
-      
-      toast({ title: "Profile Updated", description: "Your profile information has been updated successfully." });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
-    }
-  };
   
   const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -122,28 +103,6 @@ export default function AccountPage() {
         <h1 className="text-lg font-semibold md:text-2xl">Manage Account</h1>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal details here.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleProfileUpdate} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={passwordResetRequired} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={passwordResetRequired} />
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={passwordResetRequired}>Update Profile</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Change Password</CardTitle>
