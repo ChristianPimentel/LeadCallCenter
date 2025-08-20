@@ -179,12 +179,23 @@ export default function DashboardPage() {
   const filteredStudents = useMemo(() => {
     if (!selectedGroupId || !currentUser) return [];
     
-    return studentsInSelectedGroup.filter(s => {
+    const students = studentsInSelectedGroup.filter(s => {
         const lastCallStatus = s.callHistory[s.callHistory.length - 1]?.status ?? 'Not Called';
         if (filterStatus === 'all') return true;
         if (filterStatus === 'Not Called') return s.callHistory.length === 0;
         return lastCallStatus === filterStatus;
       });
+    
+    // Sort by last call timestamp descending to prioritize recently called students
+    return students.sort((a, b) => {
+        const lastCallA = a.callHistory[a.callHistory.length - 1];
+        const lastCallB = b.callHistory[b.callHistory.length - 1];
+        if (!lastCallA && !lastCallB) return 0;
+        if (!lastCallA) return 1;
+        if (!lastCallB) return -1;
+        return lastCallB.timestamp.toMillis() - lastCallA.timestamp.toMillis();
+    });
+
   }, [studentsInSelectedGroup, selectedGroupId, filterStatus, currentUser, isAdmin]);
 
   const handleGroupFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -277,6 +288,12 @@ export default function DashboardPage() {
       console.error("Error logging call:", error);
       toast({ title: "Error", description: "Could not log call.", variant: "destructive" });
     }
+  };
+  
+  const handlePhoneClick = async (e: React.MouseEvent<HTMLAnchorElement>, studentId: string) => {
+      e.preventDefault();
+      await handleLogCall(studentId, 'Called');
+      window.location.href = e.currentTarget.href;
   };
 
   const totalCallsMade = useMemo(() => {
@@ -519,9 +536,9 @@ export default function DashboardPage() {
                             <div className="text-sm text-muted-foreground md:hidden">{student.email}</div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            <div className="flex items-center gap-2">
+                            <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
                                 <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
-                            </div>
+                            </a>
                              <div className="flex items-center gap-2 text-muted-foreground">
                                 <Mail className="h-4 w-4"/> {student.email}
                             </div>
@@ -625,3 +642,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
