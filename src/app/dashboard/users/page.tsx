@@ -66,7 +66,6 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
@@ -76,11 +75,6 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
                 <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
                   <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
                       {user.status}
@@ -304,8 +298,8 @@ export default function UsersPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center">
+        <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
             <p className="text-sm text-muted-foreground">Manage all users in the system.</p>
         </div>
