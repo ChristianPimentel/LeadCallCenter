@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 export default function AccountPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -35,26 +37,23 @@ export default function AccountPage() {
     }
   }, []);
 
-  const handleProfileUpdate = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentUser) return;
     
-    // In a real app, you would have API calls here.
-    // For this demo, we update localStorage.
-    
-    const updatedUser = { ...currentUser, name, email };
-    localStorage.setItem('callflow-currentUser', JSON.stringify(updatedUser));
-    
-    // Also update the master list of users
-    const storedUsers = localStorage.getItem('callflow-users');
-    if (storedUsers) {
-      const users: User[] = JSON.parse(storedUsers);
-      const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
-      localStorage.setItem('callflow-users', JSON.stringify(updatedUsers));
+    try {
+      const userDoc = doc(db, 'users', currentUser.id);
+      await updateDoc(userDoc, { name, email });
+      
+      const updatedUser = { ...currentUser, name, email };
+      localStorage.setItem('callflow-currentUser', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      
+      toast({ title: "Profile Updated", description: "Your profile information has been updated successfully." });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
     }
-    
-    setCurrentUser(updatedUser);
-    toast({ title: "Profile Updated", description: "Your profile information has been updated successfully." });
   };
   
   const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
@@ -65,10 +64,9 @@ export default function AccountPage() {
       return;
     }
     
-    // In a real app, you would verify the current password before changing.
-    // We'll just simulate a successful change.
-    
-    toast({ title: "Password Changed", description: "Your password has been updated successfully." });
+    // NOTE: Firebase Auth is required for real password changes.
+    // This is a simulation as we don't have auth implemented.
+    toast({ title: "Password Changed", description: "Your password has been updated successfully. (Simulation)" });
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -109,7 +107,7 @@ export default function AccountPage() {
       <Card>
         <CardHeader>
           <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your password here. Please choose a strong password.</CardDescription>
+          <CardDescription>Update your password here. This is a demo and will not actually change your password.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordChange} className="grid gap-4">

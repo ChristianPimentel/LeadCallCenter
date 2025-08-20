@@ -21,41 +21,67 @@ import {
 } from "@/components/ui/select";
 import type { User } from '@/lib/types';
 import { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, query, where, limit } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock users for demo purposes, used only if localStorage is empty.
-const initialUsers: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
-  { id: '2', name: 'Regular User', email: 'user@example.com', role: 'User' },
+const initialUsers: Omit<User, 'id'>[] = [
+  { name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
+  { name: 'Regular User', email: 'user@example.com', role: 'User' },
 ];
 
+async function seedInitialUsers() {
+    const usersCollection = collection(db, 'users');
+    const snapshot = await getDocs(usersCollection);
+    if (snapshot.empty) {
+        console.log("No users found, seeding initial users...");
+        for (const user of initialUsers) {
+            await addDoc(usersCollection, user);
+        }
+    }
+}
 
 export function LoginForm() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<'Admin' | 'User'>('User');
-  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // On component mount, check localStorage for existing users.
-    const storedUsers = localStorage.getItem('callflow-users');
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      // If no users are found, seed localStorage with initial data.
-      localStorage.setItem('callflow-users', JSON.stringify(initialUsers));
-      setUsers(initialUsers);
-    }
+    seedInitialUsers();
   }, []);
 
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // In a real app, you'd handle authentication here.
-    const userToLogin = users.find(u => u.role === selectedRole);
-    if (userToLogin) {
-      localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
+    setLoading(true);
+
+    try {
+      const usersCollection = collection(db, 'users');
+      const q = query(usersCollection, where("role", "==", selectedRole), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userToLogin = { id: userDoc.id, ...userDoc.data() } as User;
+        localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
+        router.push('/dashboard');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: `No user found with the role "${selectedRole}". Please contact an admin.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    router.push('/dashboard');
   };
 
   return (
@@ -63,7 +89,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Select a role to log in. Your data will be saved in this browser.
+          Select a role to log in. This will connect to a live Firestore database.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,8 +120,8 @@ export function LoginForm() {
                 </SelectContent>
               </Select>
           </div>
-          <Button type="submit" className="w-full">
-            Login
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </form>
       </CardContent>

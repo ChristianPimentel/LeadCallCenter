@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -48,15 +49,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
-const initialUsers: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
-  { id: '2', name: 'Regular User', email: 'user@example.com', role: 'User' },
-];
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [isClient, setIsClient] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Dialog states
@@ -68,65 +66,77 @@ export default function UsersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsClient(true);
     try {
-      const storedUsers = localStorage.getItem('callflow-users');
       const storedCurrentUser = localStorage.getItem('callflow-currentUser');
-
       if (storedCurrentUser) {
         setCurrentUser(JSON.parse(storedCurrentUser));
       } else {
          window.location.href = '/';
-         return;
       }
-      setUsers(storedUsers ? JSON.parse(storedUsers) : initialUsers);
     } catch (error) {
-      console.error("Failed to parse from localStorage", error);
-      setUsers(initialUsers);
+      console.error("Failed to parse user from localStorage", error);
     }
   }, []);
 
   useEffect(() => {
-    if (isClient) {
-      localStorage.setItem('callflow-users', JSON.stringify(users));
-    }
-  }, [users, isClient]);
+    if (!currentUser) return;
 
-  const handleUserFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const usersCollection = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setUsers(usersData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleUserFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('userName') as string;
     const email = formData.get('userEmail') as string;
     const role = formData.get('userRole') as 'Admin' | 'User';
 
-    if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name, email, role } : u));
-      toast({ title: "User Updated", description: `${name}'s profile has been updated.` });
-    } else {
-      const newUser: User = { id: Date.now().toString(), name, email, role };
-      setUsers([...users, newUser]);
-      toast({ title: "User Added", description: `${name} has been added.` });
+    try {
+      if (editingUser) {
+        const userDoc = doc(db, 'users', editingUser.id);
+        await updateDoc(userDoc, { name, email, role });
+        toast({ title: "User Updated", description: `${name}'s profile has been updated.` });
+      } else {
+        await addDoc(collection(db, 'users'), { name, email, role });
+        toast({ title: "User Added", description: `${name} has been added.` });
+      }
+    } catch (error) {
+      console.error("Error saving user: ", error);
+      toast({ title: "Error", description: "Could not save user.", variant: "destructive" });
     }
+
     setUserDialogOpen(false);
     setEditingUser(null);
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!deletingUserId) return;
     if (deletingUserId === currentUser?.id) {
         toast({ title: "Cannot delete self", description: "You cannot delete your own user account.", variant: "destructive" });
         setDeleteUserAlertOpen(false);
         return;
     }
-    setUsers(users.filter(u => u.id !== deletingUserId));
-    toast({ title: "User Deleted", description: "The user has been deleted." });
+    
+    try {
+      await deleteDoc(doc(db, 'users', deletingUserId));
+      toast({ title: "User Deleted", description: "The user has been deleted." });
+    } catch (error) {
+       console.error("Error deleting user: ", error);
+       toast({ title: "Error", description: "Could not delete user.", variant: "destructive" });
+    }
     setDeleteUserAlertOpen(false);
     setDeletingUserId(null);
   };
 
   const isAdmin = currentUser?.role === 'Admin';
 
-  if (!isClient || !currentUser) {
+  if (!currentUser) {
     return null; // or a loading spinner
   }
   

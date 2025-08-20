@@ -1,8 +1,10 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export type CallStatus = 'Called' | 'Voicemail' | 'Missed Call' | 'Not Called';
 
 export type CallRecord = {
   status: CallStatus;
-  timestamp: string;
+  timestamp: Timestamp;
 };
 
 export type Student = {
