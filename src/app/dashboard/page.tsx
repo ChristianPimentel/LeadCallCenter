@@ -16,7 +16,8 @@ import {
   PhoneCall,
   Activity,
   User,
-  Users2
+  Users2,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -363,55 +364,51 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Groups</CardTitle>
-                  <CardDescription>Select a group to view students.</CardDescription>
-                </div>
-                <DialogTrigger asChild>
-                  <Button size="sm" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Group
-                  </Button>
-                </DialogTrigger>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                    {userGroups.map(group => {
-                      const groupStudents = allStudents.filter(s => s.groupId === group.id);
-                      return (
-                        <div key={group.id} className="flex items-center">
-                            <Button
-                                variant={selectedGroupId === group.id ? 'secondary' : 'ghost'}
-                                className={cn("w-full justify-start")}
-                                onClick={() => setSelectedGroupId(group.id)}
-                            >
-                                <div className="flex-1 text-left">{group.name}</div>
-                                <Badge variant="outline" className="ml-2">{groupStudents.length}</Badge>
-                            </Button>
-                            {(isAdmin || currentUser.id === group.createdBy) && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingGroup(group); setGroupDialogOpen(true); }}>
+              <Card>
+                <CardHeader>
+                    <CardTitle>Groups</CardTitle>
+                    <CardDescription>Select a group to view students.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-2">
+                    <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
+                        <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select a group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {userGroups.map(group => (
+                                <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
+                            <Plus className="h-4 w-4" />
+                            <span className="sr-only">Add Group</span>
+                        </Button>
+                    </DialogTrigger>
+                    
+                    {selectedGroup && (isAdmin || currentUser.id === selectedGroup.createdBy) && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                    <Settings className="h-4 w-4" />
+                                    <span className="sr-only">Group Actions</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setEditingGroup(selectedGroup); setGroupDialogOpen(true); }}>
                                     <Edit className="mr-2 h-4 w-4" /> Rename
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingGroupId(group.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setDeletingGroupId(selectedGroup.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                        </div>
-                      );
-                    })}
-                  </div>
-              </CardContent>
-            </Card>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </CardContent>
+              </Card>
+
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
@@ -634,3 +631,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
