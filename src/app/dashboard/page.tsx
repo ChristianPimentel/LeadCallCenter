@@ -116,6 +116,8 @@ export default function DashboardPage() {
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
   const [deleteGroupAlertOpen, setDeleteGroupAlertOpen] = React.useState(false);
   const [deletingGroupId, setDeletingGroupId] = React.useState<string | null>(null);
+  const [deleteStudentAlertOpen, setDeleteStudentAlertOpen] = React.useState(false);
+  const [deletingStudent, setDeletingStudent] = React.useState<Student | null>(null);
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   
   const { toast } = useToast();
@@ -482,6 +484,24 @@ export default function DashboardPage() {
     setStudentDialogOpen(true);
   };
 
+  const handleDeleteStudentClick = (student: Student) => {
+    setDeletingStudent(student);
+    setDeleteStudentAlertOpen(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!deletingStudent) return;
+    try {
+      await deleteDoc(doc(db, 'students', deletingStudent.id));
+      toast({ title: "Student Deleted", description: `${deletingStudent.name} has been removed.` });
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast({ title: "Error", description: "Could not delete student.", variant: "destructive" });
+    }
+    setDeleteStudentAlertOpen(false);
+    setDeletingStudent(null);
+  };
+
   const totalCallsMade = React.useMemo(() => {
     return studentsForUser.reduce((acc, student) => acc + student.callHistory.length, 0);
   }, [studentsForUser]);
@@ -772,6 +792,11 @@ export default function DashboardPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
+                                  {(isAdmin || currentUser.id === student.createdBy) && (
+                                    <DropdownMenuItem onSelect={() => handleDeleteStudentClick(student)} className="text-destructive">
+                                      Delete
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -863,6 +888,11 @@ export default function DashboardPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
+                                {(isAdmin || currentUser.id === student.createdBy) && (
+                                <DropdownMenuItem onSelect={() => handleDeleteStudentClick(student)} className="text-destructive">
+                                    Delete
+                                </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -931,6 +961,21 @@ export default function DashboardPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteGroup}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteStudentAlertOpen} onOpenChange={setDeleteStudentAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the student '{deletingStudent?.name}'.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStudent}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
