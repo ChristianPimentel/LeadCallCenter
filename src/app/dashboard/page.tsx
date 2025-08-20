@@ -254,6 +254,14 @@ export default function DashboardPage() {
     return allStudents.filter(s => userGroupIds.includes(s.groupId));
   }, [allStudents, userGroups, currentUser, isAdmin]);
 
+  const studentCountsByGroup = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    allStudents.forEach(student => {
+      counts.set(student.groupId, (counts.get(student.groupId) || 0) + 1);
+    });
+    return counts;
+  }, [allStudents]);
+
   React.useEffect(() => {
     if (userGroups.length > 0 && !userGroups.find(g => g.id === selectedGroupId)) {
         setSelectedGroupId(userGroups[0].id);
@@ -562,13 +570,17 @@ export default function DashboardPage() {
                                         <SelectGroup key={creatorName}>
                                             <SelectLabel>{creatorName}</SelectLabel>
                                             {groups.map(group => (
-                                                <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                                                <SelectItem key={group.id} value={group.id}>
+                                                    {group.name} ({studentCountsByGroup.get(group.id) || 0})
+                                                </SelectItem>
                                             ))}
                                         </SelectGroup>
                                     ))
                                 ) : (
                                     userGroups.map(group => (
-                                        <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                                        <SelectItem key={group.id} value={group.id}>
+                                            {group.name} ({studentCountsByGroup.get(group.id) || 0})
+                                        </SelectItem>
                                     ))
                                 )}
                             </SelectContent>
