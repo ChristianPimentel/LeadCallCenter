@@ -241,13 +241,21 @@ export default function DashboardPage() {
       'Voicemail': 0,
       'Missed Call': 0,
     };
+    
+    let notCalledCount = 0;
 
     studentsInSelectedGroup.forEach(student => {
+      if (student.callHistory.length === 0) {
+        notCalledCount++;
+      }
       const lastStatus = student.callHistory.length > 0 
         ? student.callHistory[student.callHistory.length - 1].status 
         : 'Not Called';
-      counts[lastStatus]++;
+      if(counts[lastStatus] !== undefined && lastStatus !== 'Not Called') {
+         counts[lastStatus]++;
+      }
     });
+    counts['Not Called'] = notCalledCount;
 
     return counts;
   }, [studentsInSelectedGroup]);
@@ -506,45 +514,47 @@ export default function DashboardPage() {
                     <CardTitle>Groups</CardTitle>
                     <CardDescription>Select a group to view students.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-row items-center gap-2">
-                    <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
-                        <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select a group" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {userGroups.map(group => (
-                                <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <CardContent>
+                    <div className="flex flex-row items-center gap-2">
+                        <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
+                            <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select a group" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {userGroups.map(group => (
+                                    <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="icon" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add Group</span>
-                        </Button>
-                    </DialogTrigger>
-                    
-                    {selectedGroup && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon">
-                                    <Settings className="h-4 w-4" />
-                                    <span className="sr-only">Group Actions</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setEditingGroup(selectedGroup); setGroupDialogOpen(true); }}>
-                                    <Edit className="mr-2 h-4 w-4" /> Rename
-                                </DropdownMenuItem>
-                                { (isAdmin || currentUser.id === selectedGroup.createdBy) && (
-                                <DropdownMenuItem onClick={() => { setDeletingGroupId(selectedGroup.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">Add Group</span>
+                            </Button>
+                        </DialogTrigger>
+                        
+                        {selectedGroup && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <Settings className="h-4 w-4" />
+                                        <span className="sr-only">Group Actions</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => { setEditingGroup(selectedGroup); setGroupDialogOpen(true); }}>
+                                        <Edit className="mr-2 h-4 w-4" /> Rename
+                                    </DropdownMenuItem>
+                                    { (isAdmin || currentUser.id === selectedGroup.createdBy) && (
+                                    <DropdownMenuItem onClick={() => { setDeletingGroupId(selectedGroup.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
                 </CardContent>
               </Card>
 
@@ -752,7 +762,7 @@ export default function DashboardPage() {
                                 {!isMobile && (
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="ghost" size="icon">
+                                        <Button variant="ghost" size="icon" onClick={() => handleLogCall(student.id, 'Called')}>
                                             <QrCode className="h-4 w-4" />
                                         </Button>
                                     </PopoverTrigger>
@@ -871,5 +881,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
