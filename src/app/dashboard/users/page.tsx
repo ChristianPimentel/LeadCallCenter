@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2, KeyRound, UserX, UserCheck, Copy } from 'lucide-react';
+import { Plus, KeyRound, UserX, UserCheck, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
@@ -54,7 +54,7 @@ const generatePassword = () => {
   return Math.random().toString(36).slice(-8);
 };
 
-const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus, onDelete }: { users: User[], currentUser: User, onEdit: (user: User) => void, onPasswordReset: (user: User) => void, onToggleStatus: (user: User) => void, onDelete: (user: User) => void }) => {
+const UserTable = ({ users, currentUser }: { users: User[], currentUser: User }) => {
     return (
         <Table>
             <TableHeader>
@@ -62,7 +62,6 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,46 +73,6 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
                     <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
                       {user.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => onEdit(user)} disabled={user.id === currentUser.id}>
-                                    <Edit className="h-4 w-4" />
-                                    <span className="sr-only">Edit</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Edit</TooltipContent>
-                        </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => onPasswordReset(user)} disabled={user.id === currentUser.id}>
-                                    <KeyRound className="h-4 w-4" />
-                                    <span className="sr-only">Reset Password</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Reset Password</TooltipContent>
-                        </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => onToggleStatus(user)} disabled={user.id === currentUser.id}>
-                                    {user.status === 'Active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                                    <span className="sr-only">{user.status === 'Active' ? 'Disable' : 'Enable'}</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{user.status === 'Active' ? 'Disable' : 'Enable'}</TooltipContent>
-                        </Tooltip>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(user)} disabled={user.id === currentUser.id} className="text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Delete</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Delete</TooltipContent>
-                        </Tooltip>
-                      </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -129,8 +88,6 @@ export default function UsersPage() {
   // Dialog states
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deleteUserAlertOpen, setDeleteUserAlertOpen] = useState(false);
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
 
@@ -208,70 +165,7 @@ export default function UsersPage() {
     setUserDialogOpen(false);
     setEditingUser(null);
   };
-
-  const handleDeleteUser = async () => {
-    if (!deletingUserId) return;
-    if (deletingUserId === currentUser?.id) {
-        toast({ title: "Cannot delete self", description: "You cannot delete your own user account.", variant: "destructive" });
-        setDeleteUserAlertOpen(false);
-        return;
-    }
-    
-    try {
-      await deleteDoc(doc(db, 'users', deletingUserId));
-      toast({ title: "User Deleted", description: "The user has been deleted." });
-    } catch (error) {
-       console.error("Error deleting user: ", error);
-       toast({ title: "Error", description: "Could not delete user.", variant: "destructive" });
-    }
-    setDeleteUserAlertOpen(false);
-    setDeletingUserId(null);
-  };
   
-  const handleEditUserClick = (user: User) => {
-    setEditingUser(user);
-    setUserDialogOpen(true);
-  };
-  
-  const handleDeleteUserClick = (user: User) => {
-    setDeletingUserId(user.id);
-    setDeleteUserAlertOpen(true);
-  };
-
-
-  const handlePasswordReset = async (user: User) => {
-    try {
-        const newPassword = generatePassword();
-        const userDoc = doc(db, 'users', user.id);
-        await updateDoc(userDoc, {
-            password: newPassword,
-            passwordResetRequired: true
-        });
-        setPasswordInfo({ name: user.name, pass: newPassword });
-        setPasswordAlertOpen(true);
-        toast({ title: "Password Reset", description: `A new temporary password has been generated for ${user.name}.` });
-    } catch (error) {
-        console.error("Error resetting password: ", error);
-        toast({ title: "Error", description: "Could not reset password.", variant: "destructive" });
-    }
-  };
-  
-  const handleToggleUserStatus = async (user: User) => {
-    if (user.id === currentUser?.id) {
-        toast({ title: "Action not allowed", description: "You cannot change the status of your own account.", variant: "destructive" });
-        return;
-    }
-    try {
-        const newStatus = user.status === 'Active' ? 'Disabled' : 'Active';
-        const userDoc = doc(db, 'users', user.id);
-        await updateDoc(userDoc, { status: newStatus });
-        toast({ title: "User Status Updated", description: `${user.name}'s account has been ${newStatus === 'Active' ? 'enabled' : 'disabled'}.` });
-    } catch (error) {
-        console.error("Error updating user status: ", error);
-        toast({ title: "Error", description: "Could not update user status.", variant: "destructive" });
-    }
-  };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Password copied to clipboard." });
@@ -349,10 +243,6 @@ export default function UsersPage() {
                     <UserTable 
                         users={admins} 
                         currentUser={currentUser}
-                        onEdit={handleEditUserClick}
-                        onPasswordReset={handlePasswordReset}
-                        onToggleStatus={handleToggleUserStatus}
-                        onDelete={handleDeleteUserClick}
                     />
                   </TooltipProvider>
                 </CardContent>
@@ -360,26 +250,24 @@ export default function UsersPage() {
         
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
+                    <div className="grid gap-2">
+                      <div className="flex items-center gap-2">
                         <CardTitle>Users</CardTitle>
-                        <CardDescription>Users with standard access.</CardDescription>
+                        <DialogTrigger asChild>
+                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">Add User</span>
+                            </Button>
+                        </DialogTrigger>
+                      </div>
+                      <CardDescription>Users with standard access.</CardDescription>
                     </div>
-                    <DialogTrigger asChild>
-                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add User</span>
-                        </Button>
-                    </DialogTrigger>
                 </CardHeader>
                 <CardContent className="p-0">
                   <TooltipProvider>
                     <UserTable 
                         users={regularUsers} 
                         currentUser={currentUser}
-                        onEdit={handleEditUserClick}
-                        onPasswordReset={handlePasswordReset}
-                        onToggleStatus={handleToggleUserStatus}
-                        onDelete={handleDeleteUserClick}
                     />
                   </TooltipProvider>
                 </CardContent>
@@ -387,22 +275,6 @@ export default function UsersPage() {
         </div>
       </Dialog>
       
-      {/* Delete User Alert */}
-      <AlertDialog open={deleteUserAlertOpen} onOpenChange={setDeleteUserAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user's account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Show Generated Password Alert */}
       <AlertDialog open={passwordAlertOpen} onOpenChange={setPasswordAlertOpen}>
         <AlertDialogContent>
