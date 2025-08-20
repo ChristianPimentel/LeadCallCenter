@@ -19,8 +19,10 @@ import {
   Users2,
   Settings,
   Upload,
+  QrCode,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { QRCodeCanvas } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -56,6 +58,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -79,6 +86,8 @@ import {
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
 import { subMonths } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 const getStatusBadgeVariant = (status: CallStatus) => {
   switch (status) {
@@ -115,6 +124,7 @@ export default function DashboardPage() {
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const cleanupOldRecords = React.useCallback(async () => {
     const threeMonthsAgo = subMonths(new Date(), 3);
@@ -545,7 +555,7 @@ export default function DashboardPage() {
                 <CardTitle>{selectedGroup?.name} Overview</CardTitle>
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
-              <CardContent className="flex justify-start">
+              <CardContent className="flex items-center justify-start">
                  <ChartContainer config={chartConfig} className="aspect-square h-[250px]">
                   <PieChart>
                     <ChartTooltip
@@ -659,12 +669,28 @@ export default function DashboardPage() {
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
-                                <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
-                            </a>
-                             <a href={`mailto:${student.email}`} className="flex items-center gap-2 text-muted-foreground hover:underline">
-                                <Mail className="h-4 w-4"/> {student.email}
-                            </a>
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col">
+                                    <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
+                                        <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
+                                    </a>
+                                    <a href={`mailto:${student.email}`} className="flex items-center gap-2 text-muted-foreground hover:underline">
+                                        <Mail className="h-4 w-4"/> {student.email}
+                                    </a>
+                                </div>
+                                {!isMobile && (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <QrCode className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto">
+                                        <QRCodeCanvas value={`tel:${student.phone}`} size={128} />
+                                    </PopoverContent>
+                                </Popover>
+                                )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
