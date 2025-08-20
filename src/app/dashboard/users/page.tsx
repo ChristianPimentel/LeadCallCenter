@@ -52,6 +52,10 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
+// Function to generate a random password
+const generatePassword = () => {
+  return Math.random().toString(36).slice(-8);
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -62,6 +66,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUserAlertOpen, setDeleteUserAlertOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -96,25 +101,36 @@ export default function UsersPage() {
     const name = formData.get('userName') as string;
     const email = formData.get('userEmail') as string;
     const role = formData.get('userRole') as 'Admin' | 'User';
-    const password = formData.get('userPassword') as string;
-
+    
     const userData: Partial<User> = { name, email, role };
-    if (password) {
-      userData.password = password;
-    }
 
     try {
       if (editingUser) {
+        const password = formData.get('userPassword') as string;
+        if (password) {
+            userData.password = password;
+        }
         const userDoc = doc(db, 'users', editingUser.id);
         await updateDoc(userDoc, userData);
         toast({ title: "User Updated", description: `${name}'s profile has been updated.` });
       } else {
-        if (!password) {
-            toast({ title: "Password Required", description: "Password is required for new users.", variant: "destructive" });
-            return;
-        }
-        await addDoc(collection(db, 'users'), { name, email, role, password });
-        toast({ title: "User Added", description: `${name} has been added.` });
+        const newPassword = generatePassword();
+        userData.password = newPassword;
+        userData.passwordResetRequired = true;
+        
+        await addDoc(collection(db, 'users'), userData);
+        
+        setGeneratedPassword(newPassword);
+        toast({
+            title: "User Added",
+            description: (
+                <div>
+                    <p>{name} has been added.</p>
+                    <p className="mt-2">Temporary Password: <strong className="bg-muted px-2 py-1 rounded">{newPassword}</strong></p>
+                </div>
+            ),
+            duration: 10000
+        });
       }
     } catch (error) {
       console.error("Error saving user: ", error);
@@ -165,7 +181,6 @@ export default function UsersPage() {
     );
   }
 
-
   return (
     <>
       <div className="flex items-center justify-between">
@@ -193,10 +208,12 @@ export default function UsersPage() {
                   <Label htmlFor="userEmail" className="text-right">Email</Label>
                   <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="userPassword" className="text-right">Password</Label>
-                  <Input id="userPassword" name="userPassword" type="password" placeholder={editingUser ? 'Leave blank to keep unchanged' : ''} className="col-span-3" />
-                </div>
+                {editingUser && (
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="userPassword" className="text-right">Password</Label>
+                        <Input id="userPassword" name="userPassword" type="password" placeholder="Leave blank to keep unchanged" className="col-span-3" />
+                    </div>
+                )}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userRole" className="text-right">Role</Label>
                   <Select name="userRole" defaultValue={editingUser?.role || 'User'}>

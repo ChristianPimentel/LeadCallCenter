@@ -10,6 +10,8 @@ import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ShieldAlert } from 'lucide-react';
 
 export default function AccountPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -18,6 +20,7 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordResetRequired, setPasswordResetRequired] = useState(false);
 
   const { toast } = useToast();
 
@@ -29,6 +32,7 @@ export default function AccountPage() {
         setCurrentUser(user);
         setName(user.name);
         setEmail(user.email);
+        setPasswordResetRequired(user.passwordResetRequired || false);
       } else {
         window.location.href = '/';
       }
@@ -56,20 +60,47 @@ export default function AccountPage() {
     }
   };
   
-  const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+    if (!currentUser) return;
+
     if (newPassword !== confirmPassword) {
       toast({ title: "Error", description: "New passwords do not match.", variant: "destructive" });
       return;
     }
+
+    if (!passwordResetRequired && currentUser.password !== currentPassword) {
+        toast({ title: "Error", description: "Current password is incorrect.", variant: "destructive" });
+        return;
+    }
     
-    // NOTE: Firebase Auth is required for real password changes.
-    // This is a simulation as we don't have auth implemented.
-    toast({ title: "Password Changed", description: "Your password has been updated successfully. (Simulation)" });
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    try {
+        const userDoc = doc(db, 'users', currentUser.id);
+        const updates: Partial<User> = { password: newPassword };
+        if (passwordResetRequired) {
+            updates.passwordResetRequired = false;
+        }
+
+        await updateDoc(userDoc, updates);
+
+        const updatedUser = { ...currentUser, password: newPassword, passwordResetRequired: false };
+        localStorage.setItem('callflow-currentUser', JSON.stringify(updatedUser));
+        setCurrentUser(updatedUser);
+        setPasswordResetRequired(false);
+
+        toast({ title: "Password Changed", description: "Your password has been updated successfully." });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+
+        if (passwordResetRequired) {
+            window.location.href = '/dashboard';
+        }
+
+    } catch (error) {
+        console.error("Error changing password:", error);
+        toast({ title: "Error", description: "Failed to change password.", variant: "destructive" });
+    }
   };
 
   if (!currentUser) {
@@ -78,6 +109,15 @@ export default function AccountPage() {
 
   return (
     <div className="grid gap-6 max-w-4xl mx-auto">
+        {passwordResetRequired && (
+            <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Security Update Required</AlertTitle>
+                <AlertDescription>
+                    For your security, you must change your temporary password before proceeding.
+                </AlertDescription>
+            </Alert>
+        )}
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">Manage Account</h1>
       </div>
@@ -91,14 +131,14 @@ export default function AccountPage() {
           <form onSubmit={handleProfileUpdate} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={passwordResetRequired} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={passwordResetRequired} />
             </div>
             <div className="flex justify-end">
-              <Button type="submit">Update Profile</Button>
+              <Button type="submit" disabled={passwordResetRequired}>Update Profile</Button>
             </div>
           </form>
         </CardContent>
@@ -107,21 +147,23 @@ export default function AccountPage() {
       <Card>
         <CardHeader>
           <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your password here. This is a demo and will not actually change your password.</CardDescription>
+          <CardDescription>Update your password here. Your new password must be at least 6 characters long.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordChange} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="current-password">Current Password</Label>
-              <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-            </div>
+            {!passwordResetRequired && (
+                <div className="grid gap-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
             </div>
              <div className="grid gap-2">
               <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
             </div>
             <div className="flex justify-end">
               <Button type="submit">Change Password</Button>

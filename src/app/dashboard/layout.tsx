@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link"
@@ -31,23 +32,32 @@ export default function DashboardLayout({
     try {
       const storedUser = localStorage.getItem('callflow-currentUser');
       if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+        const user = JSON.parse(storedUser);
+        setCurrentUser(user);
+        if (user.passwordResetRequired && pathname !== '/dashboard/account') {
+          window.location.href = '/dashboard/account';
+        }
+      } else {
+        window.location.href = '/';
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
     }
-  }, []);
+  }, [pathname]);
   
   const isAdmin = currentUser?.role === 'Admin';
+  const passwordResetRequired = currentUser?.passwordResetRequired;
 
-  const navLinkClasses = (href: string) => cn(
+  const navLinkClasses = (href: string, disabled = false) => cn(
     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-    pathname === href && "text-primary bg-muted"
+    pathname === href && "text-primary bg-muted",
+    disabled && "pointer-events-none opacity-50"
   );
   
-  const mobileNavLinkClasses = (href: string) => cn(
+  const mobileNavLinkClasses = (href: string, disabled = false) => cn(
     "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
-     pathname === href && "bg-muted text-foreground"
+     pathname === href && "bg-muted text-foreground",
+     disabled && "pointer-events-none opacity-50"
   );
 
   return (
@@ -55,7 +65,7 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
+            <Link href="/" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
               <Logo className="h-6 w-6" />
               <span className="">CallFlow</span>
             </Link>
@@ -64,7 +74,7 @@ export default function DashboardLayout({
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link
                 href="/dashboard"
-                className={navLinkClasses("/dashboard")}
+                className={navLinkClasses("/dashboard", passwordResetRequired)}
               >
                 <Home className="h-4 w-4" />
                 Groups
@@ -72,7 +82,7 @@ export default function DashboardLayout({
               {isAdmin && (
                 <Link
                   href="/dashboard/users"
-                  className={navLinkClasses("/dashboard/users")}
+                  className={navLinkClasses("/dashboard/users", passwordResetRequired)}
                 >
                   <UsersIcon className="h-4 w-4" />
                   Users
@@ -106,14 +116,14 @@ export default function DashboardLayout({
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="#"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
+                  className={cn("flex items-center gap-2 text-lg font-semibold mb-4", passwordResetRequired && "pointer-events-none")}
                 >
                   <Logo className="h-6 w-6" />
                   <span className="">CallFlow</span>
                 </Link>
                 <Link
                   href="/dashboard"
-                  className={mobileNavLinkClasses("/dashboard")}
+                  className={mobileNavLinkClasses("/dashboard", passwordResetRequired)}
                 >
                   <Home className="h-5 w-5" />
                   Groups
@@ -121,7 +131,7 @@ export default function DashboardLayout({
                 {isAdmin && (
                   <Link
                     href="/dashboard/users"
-                    className={mobileNavLinkClasses("/dashboard/users")}
+                    className={mobileNavLinkClasses("/dashboard/users", passwordResetRequired)}
                   >
                     <UsersIcon className="h-5 w-5" />
                     Users

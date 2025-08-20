@@ -70,7 +70,11 @@ export function LoginForm() {
 
       if (userToLogin.password === password) {
         localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
-        router.push('/dashboard');
+        if (userToLogin.passwordResetRequired) {
+            router.push('/dashboard/account');
+        } else {
+            router.push('/dashboard');
+        }
       } else {
         toast({
           title: "Login Failed",

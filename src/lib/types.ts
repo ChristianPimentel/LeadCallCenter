@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type CallStatus = 'Called' | 'Voicemail' | 'Missed Call' | 'Not Called';
@@ -29,4 +30,5 @@ export type User = {
   email: string;
   role: 'Admin' | 'User';
   password?: string;
+  passwordResetRequired?: boolean;
 };
