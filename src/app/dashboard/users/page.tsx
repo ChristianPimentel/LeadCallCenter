@@ -298,17 +298,14 @@ export default function UsersPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center">
-        <div className="flex-1">
-            <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
-            <p className="text-sm text-muted-foreground">Manage all users in the system.</p>
-        </div>
-        <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-              <Plus className="mr-2 h-4 w-4" /> Add User
-            </Button>
-          </DialogTrigger>
+      <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+          <div className="flex items-center">
+            <div className="flex-1">
+                <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
+                <p className="text-sm text-muted-foreground">Manage all users in the system.</p>
+            </div>
+          </div>
+
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
@@ -341,42 +338,49 @@ export default function UsersPage() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+        
 
-      <Card>
-        <CardHeader>
-            <CardTitle>Administrators</CardTitle>
-            <CardDescription>Users with full system access.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <UserTable 
-            users={admins} 
-            currentUser={currentUser}
-            onEdit={handleEditUserClick}
-            onPasswordReset={handlePasswordReset}
-            onToggleStatus={handleToggleUserStatus}
-            onDelete={handleDeleteUserClick}
-          />
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Administrators</CardTitle>
+                <CardDescription>Users with full system access.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+            <UserTable 
+                users={admins} 
+                currentUser={currentUser}
+                onEdit={handleEditUserClick}
+                onPasswordReset={handlePasswordReset}
+                onToggleStatus={handleToggleUserStatus}
+                onDelete={handleDeleteUserClick}
+            />
+            </CardContent>
+        </Card>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Users</CardTitle>
-            <CardDescription>Users with standard access.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <UserTable 
-            users={regularUsers} 
-            currentUser={currentUser}
-            onEdit={handleEditUserClick}
-            onPasswordReset={handlePasswordReset}
-            onToggleStatus={handleToggleUserStatus}
-            onDelete={handleDeleteUserClick}
-          />
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Users</CardTitle>
+                    <CardDescription>Users with standard access.</CardDescription>
+                </div>
+                <DialogTrigger asChild>
+                    <Button onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                    <Plus className="mr-2 h-4 w-4" /> Add User
+                    </Button>
+                </DialogTrigger>
+            </CardHeader>
+            <CardContent className="p-0">
+            <UserTable 
+                users={regularUsers} 
+                currentUser={currentUser}
+                onEdit={handleEditUserClick}
+                onPasswordReset={handlePasswordReset}
+                onToggleStatus={handleToggleUserStatus}
+                onDelete={handleDeleteUserClick}
+            />
+            </CardContent>
+        </Card>
+      </Dialog>
       
       {/* Delete User Alert */}
       <AlertDialog open={deleteUserAlertOpen} onOpenChange={setDeleteUserAlertOpen}>
@@ -407,7 +411,7 @@ export default function UsersPage() {
             <Input
               id="temp-password"
               readOnly
-              value={passwordInfo?.pass || ''}
+              value={passwordInfo?.pass ?? ''}
               className="pr-10"
             />
             <Button
@@ -427,5 +431,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-    
