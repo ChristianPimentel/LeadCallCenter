@@ -808,7 +808,6 @@ export default function DashboardPage() {
                                         <Mail className="h-4 w-4"/> {student.email}
                                     </a>
                                 </div>
-                                {!isMobile && (
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button variant="ghost" size="icon" onClick={() => handleLogCall(student.id, 'Called')}>
@@ -819,7 +818,6 @@ export default function DashboardPage() {
                                         <QRCodeCanvas value={`tel:${student.phone}`} size={128} />
                                     </PopoverContent>
                                 </Popover>
-                                )}
                             </div>
                           </TableCell>
                           <TableCell>
