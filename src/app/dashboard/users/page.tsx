@@ -354,7 +354,7 @@ export default function UsersPage() {
             <Input
               id="temp-password"
               readOnly
-              value={passwordInfo?.pass}
+              value={passwordInfo?.pass || ''}
               className="pr-10"
             />
             <Button
