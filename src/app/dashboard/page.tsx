@@ -400,10 +400,15 @@ export default function DashboardPage() {
   const handleLogCall = async (studentId: string, status: CallStatus) => {
     try {
       const studentDoc = doc(db, 'students', studentId);
-      await updateDoc(studentDoc, {
-        callHistory: arrayUnion({ status, timestamp: Timestamp.now() })
-      });
-      toast({ title: "Call Logged", description: `Call status for student updated to "${status}".` });
+      if (status === 'Not Called') {
+        await updateDoc(studentDoc, { callHistory: [] });
+        toast({ title: "Call Status Reset", description: "Student status has been reset to Not Called." });
+      } else {
+        await updateDoc(studentDoc, {
+          callHistory: arrayUnion({ status, timestamp: Timestamp.now() })
+        });
+        toast({ title: "Call Logged", description: `Call status for student updated to "${status}".` });
+      }
     } catch (error) {
       console.error("Error logging call:", error);
       toast({ title: "Error", description: "Could not log call.", variant: "destructive" });
@@ -742,6 +747,7 @@ export default function DashboardPage() {
                                   <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}><PhoneCall className="mr-2 h-4 w-4" /> Called</DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}><Voicemail className="mr-2 h-4 w-4" /> Voicemail</DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}><PhoneMissed className="mr-2 h-4 w-4" /> Missed Call</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Not Called')}><Phone className="mr-2 h-4 w-4" /> Not Called</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                               {lastCall && <div className="text-xs text-muted-foreground mt-1">{lastCall.timestamp.toDate().toLocaleDateString()}</div>}
@@ -839,6 +845,9 @@ export default function DashboardPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>
                                     <PhoneMissed className="mr-2 h-4 w-4" /> Missed Call
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Not Called')}>
+                                    <Phone className="mr-2 h-4 w-4" /> Not Called
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
