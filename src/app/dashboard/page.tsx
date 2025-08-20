@@ -13,11 +13,9 @@ import {
   Voicemail,
   PhoneMissed,
   PhoneCall,
-  User,
-  PanelLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,12 +58,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Logo } from '@/components/icons';
-import type { Group, Student, CallStatus } from '@/lib/types';
+import type { Group, Student, CallStatus, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 
 const initialGroups: Group[] = [
@@ -107,6 +102,7 @@ export default function DashboardPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<CallStatus | 'all'>('all');
   const [isClient, setIsClient] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Dialog states
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -115,8 +111,7 @@ export default function DashboardPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deleteGroupAlertOpen, setDeleteGroupAlertOpen] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,6 +119,11 @@ export default function DashboardPage() {
     try {
       const storedGroups = localStorage.getItem('callflow-groups');
       const storedStudents = localStorage.getItem('callflow-students');
+      const storedUser = localStorage.getItem('callflow-currentUser');
+
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
       
       const loadedGroups = storedGroups ? JSON.parse(storedGroups) : initialGroups;
       setGroups(loadedGroups);
@@ -224,280 +224,248 @@ export default function DashboardPage() {
     }));
     toast({ title: "Call Logged", description: `Call status for student updated to "${status}".` });
   };
+
+  const isAdmin = currentUser?.role === 'Admin';
   
-  const renderGroupCards = () => (
-    <div className="space-y-4">
+  if (!isClient) {
+    return null; // or a loading spinner
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center">
+        <h1 className="text-lg font-semibold md:text-2xl">Groups</h1>
+      </div>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {groups.map(group => {
             const groupStudents = students.filter(s => s.groupId === group.id);
             return (
                 <Card
                     key={group.id}
                     className={`cursor-pointer transition-all ${selectedGroupId === group.id ? 'border-primary shadow-lg' : 'hover:shadow-md'}`}
-                    onClick={() => {setSelectedGroupId(group.id); setSidebarOpen(false);}}
+                    onClick={() => setSelectedGroupId(group.id)}
                 >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-lg font-medium">{group.name}</CardTitle>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingGroup(group); setGroupDialogOpen(true); }}>
-                                    <Edit className="mr-2 h-4 w-4" /> Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingGroupId(group.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <CardTitle className="text-sm font-medium">{group.name}</CardTitle>
+                        {isAdmin && (
+                        <Dialog>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DialogTrigger asChild>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingGroup(group); setGroupDialogOpen(true); }}>
+                                        <Edit className="mr-2 h-4 w-4" /> Rename
+                                    </DropdownMenuItem>
+                                  </DialogTrigger>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingGroupId(group.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                           <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Group</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleGroupFormSubmit}>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="groupName" className="text-right">Name</Label>
+                                  <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button type="submit">Save Changes</Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                        )}
                     </CardHeader>
                     <CardContent>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            <span>{groupStudents.length} {groupStudents.length === 1 ? 'student' : 'students'}</span>
-                        </div>
+                        <div className="text-2xl font-bold">{groupStudents.length}</div>
+                        <p className="text-xs text-muted-foreground">{groupStudents.length === 1 ? 'student' : 'students'}</p>
                     </CardContent>
                 </Card>
             );
         })}
-    </div>
-);
-
-
-  if (!isClient) {
-    return null; // or a loading spinner
-  }
-
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-       <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <Logo className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">CallFlow</span>
-        </div>
-        <nav className="flex-1 overflow-auto p-4">
+        {isAdmin && (
           <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full mb-4" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true);}}>
-                    <Plus className="mr-2 h-4 w-4" /> New Group
-                </Button>
+              <Card className="flex items-center justify-center border-2 border-dashed bg-muted hover:bg-muted/90 cursor-pointer" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true);}}>
+                  <div className="text-center p-6">
+                      <Plus className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <p className="mt-2 text-sm font-medium text-muted-foreground">New Group</p>
+                  </div>
+              </Card>
             </DialogTrigger>
-            {renderGroupCards()}
              <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
+                <DialogTitle>Create New Group</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleGroupFormSubmit}>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="groupName" className="text-right">Name</Label>
-                    <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
+                    <Input id="groupName" name="groupName" className="col-span-3" required />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
+                  <Button type="submit">Create Group</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-        </nav>
-      </aside>
-
-      <div className="flex flex-col sm:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                    <Button variant="outline" size="icon" className="sm:hidden">
-                        <PanelLeft className="h-5 w-5" />
-                        <span className="sr-only">Toggle Menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="sm:max-w-xs p-0">
-                  <SheetHeader className="flex flex-row h-16 items-center gap-2 border-b px-6">
-                     <Logo className="h-8 w-8 text-primary" />
-                     <SheetTitle>
-                        <span className="text-xl font-bold">CallFlow</span>
-                     </SheetTitle>
-                  </SheetHeader>
-                   <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-                     <nav className="flex-1 overflow-auto p-4">
-                        <DialogTrigger asChild>
-                            <Button className="w-full mb-4" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true);}}>
-                                <Plus className="mr-2 h-4 w-4" /> New Group
-                            </Button>
-                        </DialogTrigger>
-                        {renderGroupCards()}
-                    </nav>
-                     <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleGroupFormSubmit}>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="groupName" className="text-right">Name</Label>
-                              <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
-                          </DialogFooter>
-                        </form>
-                      </DialogContent>
-                   </Dialog>
-                </SheetContent>
-            </Sheet>
-             <h1 className="text-xl font-semibold md:text-2xl flex-1">{selectedGroup?.name || 'Select a Group'}</h1>
-             <Avatar>
-                <AvatarFallback>AD</AvatarFallback>
-            </Avatar>
-        </header>
-
-        <main className="flex-1 p-4 sm:p-6">
-          <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-          {selectedGroupId ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle>Students</CardTitle>
-                        <p className="text-sm text-muted-foreground">Manage students in the "{selectedGroup?.name}" group.</p>
-                    </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-auto flex-1">
-                      <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as CallStatus | 'all')}>
-                        <SelectTrigger className="pl-8 w-full sm:w-[180px]">
-                          <SelectValue placeholder="Filter by status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="Not Called">Not Called</SelectItem>
-                          <SelectItem value="Called">Called</SelectItem>
-                          <SelectItem value="Voicemail">Voicemail</SelectItem>
-                          <SelectItem value="Missed Call">Missed Call</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                     <DialogTrigger asChild>
-                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full sm:w-auto flex-1 sm:flex-initial">
-                          <Plus className="mr-2 h-4 w-4" /> Add Student
-                        </Button>
-                    </DialogTrigger>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">Contact</TableHead>
-                      <TableHead>Last Call Status</TableHead>
-                      <TableHead><span className="sr-only">Actions</span></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.length > 0 ? filteredStudents.map(student => {
-                      const lastCall = student.callHistory[student.callHistory.length - 1];
-                      const status: CallStatus = lastCall?.status ?? 'Not Called';
-                      return (
-                        <TableRow key={student.id}>
-                          <TableCell>
-                            <div className="font-medium">{student.name}</div>
-                            <div className="text-sm text-muted-foreground md:hidden">{student.email}</div>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
-                            </div>
-                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Mail className="h-4 w-4"/> {student.email}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-2 w-fit">
-                                {getStatusIcon(status)}
-                                {status}
-                            </Badge>
-                             {lastCall && <div className="text-xs text-muted-foreground mt-1">{new Date(lastCall.timestamp).toLocaleString()}</div>}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}>Log "Called"</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>Log "Voicemail"</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>Log "Missed Call"</DropdownMenuItem>
-                                <Separator />
-                                 <DialogTrigger asChild>
-                                    <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                 </DialogTrigger>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    }) : (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                No students found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
-                <div className="flex flex-col items-center gap-1 text-center">
-                    <Users className="h-12 w-12 text-muted-foreground" />
-                    <h3 className="text-2xl font-bold tracking-tight">
-                        No group selected
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                        Select a group from the sidebar to view students or create a new group.
-                    </p>
-                </div>
-            </div>
-          )}
-           <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleStudentFormSubmit}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="studentName" className="text-right">Name</Label>
-                    <Input id="studentName" name="studentName" defaultValue={editingStudent?.name} className="col-span-3" required />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="studentPhone" className="text-right">Phone</Label>
-                    <Input id="studentPhone" name="studentPhone" type="tel" defaultValue={editingStudent?.phone} className="col-span-3" required />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="studentEmail" className="text-right">Email</Label>
-                    <Input id="studentEmail" name="studentEmail" type="email" defaultValue={editingStudent?.email} className="col-span-3" required />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">{editingStudent ? 'Save Changes' : 'Add Student'}</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </main>
+        )}
       </div>
+
+      <Separator />
+
+      <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
+        {selectedGroupId ? (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                      <CardTitle>{selectedGroup?.name} Students</CardTitle>
+                      <CardDescription>Manage students in this group.</CardDescription>
+                  </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-auto flex-1">
+                    <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as CallStatus | 'all')}>
+                      <SelectTrigger className="pl-8 w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="Not Called">Not Called</SelectItem>
+                        <SelectItem value="Called">Called</SelectItem>
+                        <SelectItem value="Voicemail">Voicemail</SelectItem>
+                        <SelectItem value="Missed Call">Missed Call</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                   <DialogTrigger asChild>
+                      <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full sm:w-auto flex-1 sm:flex-initial">
+                        <Plus className="mr-2 h-4 w-4" /> Add Student
+                      </Button>
+                  </DialogTrigger>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Contact</TableHead>
+                    <TableHead>Last Call Status</TableHead>
+                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.length > 0 ? filteredStudents.map(student => {
+                    const lastCall = student.callHistory[student.callHistory.length - 1];
+                    const status: CallStatus = lastCall?.status ?? 'Not Called';
+                    return (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground md:hidden">{student.email}</div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
+                          </div>
+                           <div className="flex items-center gap-2 text-muted-foreground">
+                              <Mail className="h-4 w-4"/> {student.email}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(status)} className="flex items-center gap-2 w-fit">
+                              {getStatusIcon(status)}
+                              {status}
+                          </Badge>
+                           {lastCall && <div className="text-xs text-muted-foreground mt-1">{new Date(lastCall.timestamp).toLocaleString()}</div>}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Called')}>Log "Called"</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>Log "Voicemail"</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>Log "Missed Call"</DropdownMenuItem>
+                              {isAdmin && <>
+                                <Separator />
+                                <DialogTrigger asChild>
+                                  <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
+                                </DialogTrigger>
+                              </>}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  }) : (
+                      <TableRow>
+                          <TableCell colSpan={4} className="h-24 text-center">
+                              No students found.
+                          </TableCell>
+                      </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-64">
+              <div className="flex flex-col items-center gap-1 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground" />
+                  <h3 className="text-2xl font-bold tracking-tight">
+                      No group selected
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                      Select a group to view students.
+                  </p>
+              </div>
+          </div>
+        )}
+         <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleStudentFormSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="studentName" className="text-right">Name</Label>
+                  <Input id="studentName" name="studentName" defaultValue={editingStudent?.name} className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="studentPhone" className="text-right">Phone</Label>
+                  <Input id="studentPhone" name="studentPhone" type="tel" defaultValue={editingStudent?.phone} className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="studentEmail" className="text-right">Email</Label>
+                  <Input id="studentEmail" name="studentEmail" type="email" defaultValue={editingStudent?.email} className="col-span-3" required />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">{editingStudent ? 'Save Changes' : 'Add Student'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       
       {/* Delete Group Alert */}
       <AlertDialog open={deleteGroupAlertOpen} onOpenChange={setDeleteGroupAlertOpen}>

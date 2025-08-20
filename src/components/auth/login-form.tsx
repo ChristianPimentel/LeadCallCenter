@@ -11,13 +11,41 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { User } from '@/lib/types';
+import { useState } from 'react';
+
+// Mock users for demo purposes
+const mockUsers: User[] = [
+  { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'Admin' },
+  { id: '2', name: 'Regular User', email: 'user@example.com', role: 'User' },
+];
+
 
 export function LoginForm() {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<'Admin' | 'User'>('User');
+
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // In a real app, you'd handle authentication here.
+    const userToLogin = mockUsers.find(u => u.role === selectedRole);
+    if (userToLogin) {
+      localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
+    }
+    
+    // Seed users if they don't exist
+    if (!localStorage.getItem('callflow-users')) {
+      localStorage.setItem('callflow-users', JSON.stringify(mockUsers));
+    }
+
     router.push('/dashboard');
   };
 
@@ -26,7 +54,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Login</CardTitle>
         <CardDescription>
-          Enter your email below to login to your account
+          Enter your details below to login to your account.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -42,10 +70,20 @@ export function LoginForm() {
             />
           </div>
           <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" required defaultValue="password" />
+          </div>
+           <div className="grid gap-2">
+            <Label htmlFor="role">Login as</Label>
+             <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as 'Admin' | 'User')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="User">User</SelectItem>
+                </SelectContent>
+              </Select>
           </div>
           <Button type="submit" className="w-full">
             Login
