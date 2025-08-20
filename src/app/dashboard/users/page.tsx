@@ -361,9 +361,9 @@ export default function UsersPage() {
                         <CardDescription>Users with standard access.</CardDescription>
                     </div>
                     <DialogTrigger asChild>
-                        <Button size="sm" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add User
+                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                            <Plus className="h-4 w-4" />
+                            <span className="sr-only">Add User</span>
                         </Button>
                     </DialogTrigger>
                 </CardHeader>
@@ -430,3 +430,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+    
