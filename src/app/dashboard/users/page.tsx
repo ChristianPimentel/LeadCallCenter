@@ -2,16 +2,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, MoreVertical, Edit, Trash2, Copy, KeyRound, UserX, UserCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, KeyRound, UserX, UserCheck, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -48,11 +41,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 // Function to generate a random password
 const generatePassword = () => {
@@ -67,7 +63,7 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -80,38 +76,45 @@ const UserTable = ({ users, currentUser, onEdit, onPasswordReset, onToggleStatus
                       {user.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.id === currentUser.id}>
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuItem onClick={() => onEdit(user)}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onPasswordReset(user)}>
-                                <KeyRound className="mr-2 h-4 w-4" /> Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onToggleStatus(user)}>
-                                {user.status === 'Active' ? (
-                                    <><UserX className="mr-2 h-4 w-4" /> Disable</>
-                                ) : (
-                                    <><UserCheck className="mr-2 h-4 w-4" /> Enable</>
-                                )}
-                            </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => onDelete(user)}
-                            disabled={user.id === currentUser.id}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                  <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onEdit(user)} disabled={user.id === currentUser.id}>
+                                    <Edit className="h-4 w-4" />
+                                    <span className="sr-only">Edit</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onPasswordReset(user)} disabled={user.id === currentUser.id}>
+                                    <KeyRound className="h-4 w-4" />
+                                    <span className="sr-only">Reset Password</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Reset Password</TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onToggleStatus(user)} disabled={user.id === currentUser.id}>
+                                    {user.status === 'Active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                    <span className="sr-only">{user.status === 'Active' ? 'Disable' : 'Enable'}</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{user.status === 'Active' ? 'Disable' : 'Enable'}</TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onDelete(user)} disabled={user.id === currentUser.id} className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Delete</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
+                      </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -131,6 +134,7 @@ export default function UsersPage() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { toast } = useToast();
 
@@ -356,18 +360,18 @@ export default function UsersPage() {
         
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
+                    <div className="flex items-start justify-between gap-4">
+                         <div>
                             <CardTitle>Users</CardTitle>
-                            <DialogTrigger asChild>
-                                <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                                    <Plus className="h-4 w-4" />
-                                    <span className="sr-only">Add User</span>
-                                </Button>
-                            </DialogTrigger>
-                        </div>
+                            <CardDescription>Users with standard access.</CardDescription>
+                         </div>
+                        <DialogTrigger asChild>
+                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                                <Plus className="h-4 w-4" />
+                                <span className="sr-only">Add User</span>
+                            </Button>
+                        </DialogTrigger>
                     </div>
-                    <CardDescription>Users with standard access.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                 <UserTable 
@@ -412,7 +416,7 @@ export default function UsersPage() {
             <Input
               id="temp-password"
               readOnly
-              value={passwordInfo?.pass ?? ''}
+              value={passwordInfo?.pass || ''}
               className="pr-10"
             />
             <Button
@@ -432,5 +436,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-    
