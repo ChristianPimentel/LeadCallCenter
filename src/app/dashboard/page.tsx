@@ -227,7 +227,7 @@ export default function DashboardPage() {
   }, [allUsers, currentUser, isAdmin]);
   
   const groupedByCreator = React.useMemo(() => {
-    if (!isAdmin) return null;
+    if (!isAdmin || !currentUser) return null;
     const grouped = new Map<string, Group[]>();
     allGroups.forEach(group => {
         const creatorName = userMap.get(group.createdBy) || 'Unknown User';
@@ -236,8 +236,13 @@ export default function DashboardPage() {
         }
         grouped.get(creatorName)!.push(group);
     });
-    return Array.from(grouped.entries());
-  }, [allGroups, userMap, isAdmin]);
+    
+    return Array.from(grouped.entries()).sort(([a], [b]) => {
+        if (a === currentUser.name) return -1;
+        if (b === currentUser.name) return 1;
+        return a.localeCompare(b);
+    });
+  }, [allGroups, userMap, isAdmin, currentUser]);
 
 
   const studentsForUser = React.useMemo(() => {
