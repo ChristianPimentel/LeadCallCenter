@@ -71,6 +71,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import type { Group, Student, CallStatus, User as AppUser } from '@/lib/types';
@@ -102,6 +104,7 @@ const getStatusIcon = (status: CallStatus) => {
 export default function DashboardPage() {
   const [allGroups, setAllGroups] = React.useState<Group[]>([]);
   const [allStudents, setAllStudents] = React.useState<Student[]>([]);
+  const [allUsers, setAllUsers] = React.useState<AppUser[]>([]);
   const [selectedGroupId, setSelectedGroupId] = React.useState<string | null>(null);
   const [filterStatus, setFilterStatus] = React.useState<CallStatus | 'all'>('all');
   const [currentUser, setCurrentUser] = React.useState<AppUser | null>(null);
@@ -171,6 +174,8 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const isAdmin = currentUser?.role === 'Admin';
+
   React.useEffect(() => {
     if (!currentUser) return;
 
@@ -189,19 +194,51 @@ export default function DashboardPage() {
       setAllStudents(studentsData);
     });
 
+    let unsubscribeUsers = () => {};
+    if (isAdmin) {
+      const usersCollection = collection(db, 'users');
+      unsubscribeUsers = onSnapshot(usersCollection, (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+        setAllUsers(usersData);
+      });
+    }
+
     return () => {
       unsubscribeGroups();
       unsubscribeStudents();
+      unsubscribeUsers();
     };
-  }, [currentUser, cleanupOldRecords]);
-
-  const isAdmin = currentUser?.role === 'Admin';
+  }, [currentUser, isAdmin, cleanupOldRecords]);
 
   const userGroups = React.useMemo(() => {
     if (!currentUser) return [];
     if (isAdmin) return allGroups;
     return allGroups.filter(g => g.createdBy === currentUser.id);
   }, [allGroups, currentUser, isAdmin]);
+  
+  const userMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    if (isAdmin) {
+      allUsers.forEach(user => map.set(user.id, user.name));
+    } else if (currentUser) {
+      map.set(currentUser.id, currentUser.name);
+    }
+    return map;
+  }, [allUsers, currentUser, isAdmin]);
+  
+  const groupedByCreator = React.useMemo(() => {
+    if (!isAdmin) return null;
+    const grouped = new Map<string, Group[]>();
+    allGroups.forEach(group => {
+        const creatorName = userMap.get(group.createdBy) || 'Unknown User';
+        if (!grouped.has(creatorName)) {
+            grouped.set(creatorName, []);
+        }
+        grouped.get(creatorName)!.push(group);
+    });
+    return Array.from(grouped.entries());
+  }, [allGroups, userMap, isAdmin]);
+
 
   const studentsForUser = React.useMemo(() => {
     if (!currentUser) return [];
@@ -490,9 +527,20 @@ export default function DashboardPage() {
                                 <SelectValue placeholder="Select a group" />
                             </SelectTrigger>
                             <SelectContent>
-                                {userGroups.map(group => (
-                                    <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                                ))}
+                                {groupedByCreator ? (
+                                    groupedByCreator.map(([creatorName, groups]) => (
+                                        <SelectGroup key={creatorName}>
+                                            <SelectLabel>{creatorName}</SelectLabel>
+                                            {groups.map(group => (
+                                                <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    ))
+                                ) : (
+                                    userGroups.map(group => (
+                                        <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                                    ))
+                                )}
                             </SelectContent>
                         </Select>
 
@@ -551,7 +599,10 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>{selectedGroup?.name} Overview</CardTitle>
-                <CardDescription>Call status breakdown for this group.</CardDescription>
+                <CardDescription>
+                  {isAdmin && selectedGroup ? `Created by ${userMap.get(selectedGroup.createdBy) || 'Unknown'}. ` : ''}
+                  Call status breakdown for this group.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                  <div className="grid grid-cols-2 gap-4">
