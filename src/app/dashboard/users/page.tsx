@@ -361,7 +361,7 @@ export default function UsersPage() {
                             <CardTitle>Users</CardTitle>
                             <CardDescription>Users with standard access.</CardDescription>
                         </div>
-                        <div className="hidden md:block">
+                        <div>
                             <DialogTrigger asChild>
                                 <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
                                     <Plus className="h-4 w-4" />
