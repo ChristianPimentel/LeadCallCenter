@@ -68,7 +68,7 @@ const UserTable = ({ users, currentUser }: { users: User[], currentUser: User })
               {users.map(user => (
                 <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
                   <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="break-words">{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
                       {user.status}
@@ -251,15 +251,15 @@ export default function UsersPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div className="grid gap-2">
-                      <div className="flex items-center gap-2">
-                        <CardTitle>Users</CardTitle>
-                        <DialogTrigger asChild>
-                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                                <Plus className="h-4 w-4" />
-                                <span className="sr-only">Add User</span>
-                            </Button>
-                        </DialogTrigger>
-                      </div>
+                        <div className="flex items-center gap-2">
+                            <CardTitle>Users</CardTitle>
+                            <DialogTrigger asChild>
+                                <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                                    <Plus className="h-4 w-4" />
+                                    <span className="sr-only">Add User</span>
+                                </Button>
+                            </DialogTrigger>
+                        </div>
                       <CardDescription>Users with standard access.</CardDescription>
                     </div>
                 </CardHeader>
@@ -308,5 +308,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-    
