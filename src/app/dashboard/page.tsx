@@ -640,19 +640,19 @@ export default function DashboardPage() {
                              {lastCall && <div className="text-xs text-muted-foreground mt-1">{lastCall.timestamp.toDate().toLocaleString()}</div>}
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {canEditStudent && (
-                                   <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            {canEditStudent && (
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                           </TableCell>
                         </TableRow>
                       )
@@ -725,3 +725,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
