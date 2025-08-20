@@ -357,6 +357,11 @@ export default function DashboardPage() {
 
     reader.readAsBinaryString(file);
   };
+  
+  const handleEditStudentClick = (student: Student) => {
+    setEditingStudent(student);
+    setStudentDialogOpen(true);
+  };
 
   const totalCallsMade = useMemo(() => {
     return studentsForUser.reduce((acc, student) => acc + student.callHistory.length, 0);
@@ -644,9 +649,7 @@ export default function DashboardPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 {canEditStudent && (
-                                  <DialogTrigger asChild>
-                                    <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                  </DialogTrigger>
+                                   <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -722,5 +725,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
