@@ -16,12 +16,14 @@ export type Student = {
   groupId: string;
   callHistory: CallRecord[];
   createdBy: string; // User ID
+  createdAt: Timestamp;
 };
 
 export type Group = {
   id: string;
   name: string;
   createdBy: string; // User ID
+  createdAt: Timestamp;
 };
 
 export type User = {

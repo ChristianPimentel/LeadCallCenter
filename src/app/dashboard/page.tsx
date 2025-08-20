@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -84,6 +84,7 @@ import {
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
 import { cn } from '@/lib/utils';
+import { subMonths } from 'date-fns';
 
 const getStatusBadgeVariant = (status: CallStatus) => {
   switch (status) {
@@ -121,6 +122,46 @@ export default function DashboardPage() {
   
   const { toast } = useToast();
 
+  const cleanupOldRecords = useCallback(async () => {
+    const threeMonthsAgo = subMonths(new Date(), 3);
+    const threeMonthsAgoTimestamp = Timestamp.fromDate(threeMonthsAgo);
+    let deletedCount = 0;
+
+    try {
+        const batch = writeBatch(db);
+
+        // Cleanup old students
+        const studentsQuery = query(collection(db, 'students'), where('createdAt', '<', threeMonthsAgoTimestamp));
+        const oldStudentsSnapshot = await getDocs(studentsQuery);
+        oldStudentsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+            deletedCount++;
+        });
+
+        // Cleanup old groups (and their remaining students)
+        const groupsQuery = query(collection(db, 'groups'), where('createdAt', '<', threeMonthsAgoTimestamp));
+        const oldGroupsSnapshot = await getDocs(groupsQuery);
+
+        for (const groupDoc of oldGroupsSnapshot.docs) {
+            batch.delete(groupDoc.ref);
+            deletedCount++;
+            
+            const studentsInGroupQuery = query(collection(db, 'students'), where('groupId', '==', groupDoc.id));
+            const studentsInGroupSnapshot = await getDocs(studentsInGroupQuery);
+            studentsInGroupSnapshot.forEach(studentDoc => {
+                batch.delete(studentDoc.ref);
+            });
+        }
+        
+        if (deletedCount > 0) {
+            await batch.commit();
+            toast({ title: "Data Cleanup", description: `${deletedCount} old records (groups and students) were automatically deleted.` });
+        }
+    } catch (error) {
+        console.error("Error cleaning up old records:", error);
+    }
+  }, [toast]);
+
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('callflow-currentUser');
@@ -136,6 +177,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!currentUser) return;
+
+    cleanupOldRecords();
 
     const groupsCollection = collection(db, 'groups');
     const studentsCollection = collection(db, 'students');
@@ -154,7 +197,7 @@ export default function DashboardPage() {
       unsubscribeGroups();
       unsubscribeStudents();
     };
-  }, [currentUser]);
+  }, [currentUser, cleanupOldRecords]);
 
   const isAdmin = currentUser?.role === 'Admin';
 
@@ -196,17 +239,19 @@ export default function DashboardPage() {
         return lastCallStatus === filterStatus;
       });
     
-    // Sort by last call timestamp descending to prioritize recently called students
     return students.sort((a, b) => {
         const lastCallA = a.callHistory[a.callHistory.length - 1];
         const lastCallB = b.callHistory[b.callHistory.length - 1];
         if (!lastCallA && !lastCallB) return 0;
         if (!lastCallA) return 1;
         if (!lastCallB) return -1;
-        return lastCallB.timestamp.toMillis() - lastCallA.timestamp.toMillis();
+        if (lastCallB.timestamp && lastCallA.timestamp) {
+            return lastCallB.timestamp.toMillis() - lastCallA.timestamp.toMillis();
+        }
+        return 0;
     });
 
-  }, [studentsInSelectedGroup, selectedGroupId, filterStatus, currentUser, isAdmin]);
+  }, [studentsInSelectedGroup, selectedGroupId, filterStatus, currentUser]);
 
   const handleGroupFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -221,7 +266,7 @@ export default function DashboardPage() {
         await updateDoc(groupDoc, { name });
         toast({ title: "Group Updated", description: `Group "${name}" has been updated.`});
       } else {
-        await addDoc(collection(db, 'groups'), { name, createdBy: currentUser.id });
+        await addDoc(collection(db, 'groups'), { name, createdBy: currentUser.id, createdAt: Timestamp.now() });
         toast({ title: "Group Created", description: `Group "${name}" has been created.`});
       }
     } catch (error) {
@@ -275,7 +320,7 @@ export default function DashboardPage() {
         await updateDoc(studentDoc, { name, phone, email });
         toast({ title: "Student Updated", description: `${name}'s profile has been updated.` });
       } else {
-        const newStudent = { name, phone, email, groupId: selectedGroupId, callHistory: [], createdBy: currentUser.id };
+        const newStudent = { name, phone, email, groupId: selectedGroupId, callHistory: [], createdBy: currentUser.id, createdAt: Timestamp.now() };
         await addDoc(collection(db, 'students'), newStudent);
         toast({ title: "Student Added", description: `${name} has been added to the group.` });
       }
@@ -337,7 +382,8 @@ export default function DashboardPage() {
               email: String(row.email),
               groupId: selectedGroupId,
               callHistory: [],
-              createdBy: currentUser.id
+              createdBy: currentUser.id,
+              createdAt: Timestamp.now()
             };
             const studentRef = doc(collection(db, 'students'));
             batch.set(studentRef, newStudent);
@@ -645,15 +691,15 @@ export default function DashboardPage() {
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                              <DropdownMenuTrigger asChild>
                                 <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
+                                  <MoreVertical className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
-                            </DropdownMenuContent>
+                              </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
@@ -727,5 +773,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
