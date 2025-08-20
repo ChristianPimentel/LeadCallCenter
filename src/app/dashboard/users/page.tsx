@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2, KeyRound, UserX, UserCheck, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, KeyRound, UserX, UserCheck, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -41,13 +41,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 
 // Function to generate a random password
@@ -134,7 +133,6 @@ export default function UsersPage() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   const { toast } = useToast();
 
@@ -347,41 +345,43 @@ export default function UsersPage() {
                     <CardDescription>Users with full system access.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                <UserTable 
-                    users={admins} 
-                    currentUser={currentUser}
-                    onEdit={handleEditUserClick}
-                    onPasswordReset={handlePasswordReset}
-                    onToggleStatus={handleToggleUserStatus}
-                    onDelete={handleDeleteUserClick}
-                />
+                  <TooltipProvider>
+                    <UserTable 
+                        users={admins} 
+                        currentUser={currentUser}
+                        onEdit={handleEditUserClick}
+                        onPasswordReset={handlePasswordReset}
+                        onToggleStatus={handleToggleUserStatus}
+                        onDelete={handleDeleteUserClick}
+                    />
+                  </TooltipProvider>
                 </CardContent>
             </Card>
         
             <Card>
-                <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                         <div>
-                            <CardTitle>Users</CardTitle>
-                            <CardDescription>Users with standard access.</CardDescription>
-                         </div>
-                        <DialogTrigger asChild>
-                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                                <Plus className="h-4 w-4" />
-                                <span className="sr-only">Add User</span>
-                            </Button>
-                        </DialogTrigger>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Users</CardTitle>
+                        <CardDescription>Users with standard access.</CardDescription>
                     </div>
+                    <DialogTrigger asChild>
+                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                            <Plus className="h-4 w-4" />
+                            <span className="sr-only">Add User</span>
+                        </Button>
+                    </DialogTrigger>
                 </CardHeader>
                 <CardContent className="p-0">
-                <UserTable 
-                    users={regularUsers} 
-                    currentUser={currentUser}
-                    onEdit={handleEditUserClick}
-                    onPasswordReset={handlePasswordReset}
-                    onToggleStatus={handleToggleUserStatus}
-                    onDelete={handleDeleteUserClick}
-                />
+                  <TooltipProvider>
+                    <UserTable 
+                        users={regularUsers} 
+                        currentUser={currentUser}
+                        onEdit={handleEditUserClick}
+                        onPasswordReset={handlePasswordReset}
+                        onToggleStatus={handleToggleUserStatus}
+                        onDelete={handleDeleteUserClick}
+                    />
+                  </TooltipProvider>
                 </CardContent>
             </Card>
         </div>
@@ -436,3 +436,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+    
