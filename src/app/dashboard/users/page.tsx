@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -66,7 +66,8 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUserAlertOpen, setDeleteUserAlertOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
+  const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -119,18 +120,10 @@ export default function UsersPage() {
         userData.passwordResetRequired = true;
         
         await addDoc(collection(db, 'users'), userData);
-        
-        setGeneratedPassword(newPassword);
-        toast({
-            title: "User Added",
-            description: (
-                <div>
-                    <p>{name} has been added.</p>
-                    <p className="mt-2">Temporary Password: <strong className="bg-muted px-2 py-1 rounded">{newPassword}</strong></p>
-                </div>
-            ),
-            duration: 10000
-        });
+
+        toast({ title: "User Added", description: `${name} has been added successfully.` });
+        setPasswordInfo({ name: name, pass: newPassword });
+        setPasswordAlertOpen(true);
       }
     } catch (error) {
       console.error("Error saving user: ", error);
@@ -160,6 +153,11 @@ export default function UsersPage() {
     setDeletingUserId(null);
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Password copied to clipboard." });
+  };
+  
   const isAdmin = currentUser?.role === 'Admin';
 
   if (!currentUser) {
@@ -296,6 +294,37 @@ export default function UsersPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Show Generated Password Alert */}
+      <AlertDialog open={passwordAlertOpen} onOpenChange={setPasswordAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>User Created Successfully</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please copy the temporary password for <strong>{passwordInfo?.name}</strong> and share it with them. They will be required to change it upon their first login.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="relative my-4">
+            <Input
+              id="temp-password"
+              readOnly
+              value={passwordInfo?.pass}
+              className="pr-10"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+              onClick={() => copyToClipboard(passwordInfo?.pass || '')}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setPasswordAlertOpen(false); setPasswordInfo(null); }}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
