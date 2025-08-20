@@ -595,7 +595,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <CardTitle>{selectedGroup?.name} Students</CardTitle>
+                        <CardTitle>{selectedGroup?.name} Students ({studentsInSelectedGroup.length})</CardTitle>
                         <CardDescription>Manage students in this group.</CardDescription>
                     </div>
                   <div className="flex flex-wrap items-center gap-2">
