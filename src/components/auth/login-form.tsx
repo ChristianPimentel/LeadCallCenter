@@ -123,12 +123,11 @@ export function LoginForm() {
               type="email"
               placeholder="m@example.com"
               required
-              defaultValue="admin@example.com"
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required defaultValue="password" />
+            <Input id="password" name="password" type="password" required />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
