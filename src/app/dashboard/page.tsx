@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React from 'react';
 import {
   Users,
   Plus,
@@ -99,24 +99,24 @@ const getStatusIcon = (status: CallStatus) => {
 };
 
 export default function DashboardPage() {
-  const [allGroups, setAllGroups] = useState<Group[]>([]);
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<CallStatus | 'all'>('all');
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [allGroups, setAllGroups] = React.useState<Group[]>([]);
+  const [allStudents, setAllStudents] = React.useState<Student[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = React.useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = React.useState<CallStatus | 'all'>('all');
+  const [currentUser, setCurrentUser] = React.useState<AppUser | null>(null);
 
   // Dialog states
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [studentDialogOpen, setStudentDialogOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [deleteGroupAlertOpen, setDeleteGroupAlertOpen] = useState(false);
-  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [groupDialogOpen, setGroupDialogOpen] = React.useState(false);
+  const [editingGroup, setEditingGroup] = React.useState<Group | null>(null);
+  const [studentDialogOpen, setStudentDialogOpen] = React.useState(false);
+  const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
+  const [deleteGroupAlertOpen, setDeleteGroupAlertOpen] = React.useState(false);
+  const [deletingGroupId, setDeletingGroupId] = React.useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   
   const { toast } = useToast();
 
-  const cleanupOldRecords = useCallback(async () => {
+  const cleanupOldRecords = React.useCallback(async () => {
     const threeMonthsAgo = subMonths(new Date(), 3);
     const threeMonthsAgoTimestamp = Timestamp.fromDate(threeMonthsAgo);
     let deletedCount = 0;
@@ -156,7 +156,7 @@ export default function DashboardPage() {
     }
   }, [toast]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       const storedUser = localStorage.getItem('callflow-currentUser');
       if (storedUser) {
@@ -169,7 +169,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!currentUser) return;
 
     cleanupOldRecords();
@@ -195,20 +195,20 @@ export default function DashboardPage() {
 
   const isAdmin = currentUser?.role === 'Admin';
 
-  const userGroups = useMemo(() => {
+  const userGroups = React.useMemo(() => {
     if (!currentUser) return [];
     if (isAdmin) return allGroups;
     return allGroups.filter(g => g.createdBy === currentUser.id);
   }, [allGroups, currentUser, isAdmin]);
 
-  const studentsForUser = useMemo(() => {
+  const studentsForUser = React.useMemo(() => {
     if (!currentUser) return [];
     if (isAdmin) return allStudents;
     const userGroupIds = userGroups.map(g => g.id);
     return allStudents.filter(s => userGroupIds.includes(s.groupId));
   }, [allStudents, userGroups, currentUser, isAdmin]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (userGroups.length > 0 && !userGroups.find(g => g.id === selectedGroupId)) {
         setSelectedGroupId(userGroups[0].id);
     } else if (userGroups.length === 0) {
@@ -216,14 +216,14 @@ export default function DashboardPage() {
     }
   }, [userGroups, selectedGroupId]);
 
-  const selectedGroup = useMemo(() => userGroups.find(g => g.id === selectedGroupId), [userGroups, selectedGroupId]);
+  const selectedGroup = React.useMemo(() => userGroups.find(g => g.id === selectedGroupId), [userGroups, selectedGroupId]);
   
-  const studentsInSelectedGroup = useMemo(() => {
+  const studentsInSelectedGroup = React.useMemo(() => {
      if (!selectedGroupId) return [];
      return allStudents.filter(s => s.groupId === selectedGroupId);
   }, [allStudents, selectedGroupId]);
 
-  const filteredStudents = useMemo(() => {
+  const filteredStudents = React.useMemo(() => {
     if (!selectedGroupId || !currentUser) return [];
     
     const students = studentsInSelectedGroup.filter(s => {
@@ -406,11 +406,11 @@ export default function DashboardPage() {
     setStudentDialogOpen(true);
   };
 
-  const totalCallsMade = useMemo(() => {
+  const totalCallsMade = React.useMemo(() => {
     return studentsForUser.reduce((acc, student) => acc + student.callHistory.length, 0);
   }, [studentsForUser]);
 
-  const chartData = useMemo(() => {
+  const chartData = React.useMemo(() => {
     const statuses: { [key in CallStatus]: number } = {
       'Called': 0,
       'Voicemail': 0,
@@ -774,9 +774,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
