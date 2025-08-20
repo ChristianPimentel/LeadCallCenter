@@ -355,17 +355,21 @@ export default function UsersPage() {
             </Card>
         
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Users</CardTitle>
-                        <CardDescription>Users with standard access.</CardDescription>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="grid gap-1">
+                            <CardTitle>Users</CardTitle>
+                            <CardDescription>Users with standard access.</CardDescription>
+                        </div>
+                        <div className="hidden md:block">
+                            <DialogTrigger asChild>
+                                <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                                    <Plus className="h-4 w-4" />
+                                    <span className="sr-only">Add User</span>
+                                </Button>
+                            </DialogTrigger>
+                        </div>
                     </div>
-                    <DialogTrigger asChild>
-                        <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
-                            <Plus className="h-4 w-4" />
-                            <span className="sr-only">Add User</span>
-                        </Button>
-                    </DialogTrigger>
                 </CardHeader>
                 <CardContent className="p-0">
                 <UserTable 
@@ -430,5 +434,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-    
