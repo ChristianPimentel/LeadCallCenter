@@ -477,7 +477,7 @@ export default function DashboardPage() {
                     <CardTitle>Groups</CardTitle>
                     <CardDescription>Select a group to view students.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-2">
+                <CardContent className="flex flex-row gap-2">
                     <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
                         <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Select a group" />
@@ -588,11 +588,11 @@ export default function DashboardPage() {
                         <CardTitle>{selectedGroup?.name} Students</CardTitle>
                         <CardDescription>Manage students in this group.</CardDescription>
                     </div>
-                  <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
                       <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as CallStatus | 'all')}>
-                        <SelectTrigger className="pl-8 w-full">
+                        <SelectTrigger className="pl-8 w-[160px]">
                           <SelectValue placeholder="Filter by status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -605,13 +605,13 @@ export default function DashboardPage() {
                       </Select>
                     </div>
                      <DialogTrigger asChild>
-                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full">
-                          <Plus className="mr-2 h-4 w-4" /> Add Student
+                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }}>
+                          <Plus className="mr-2 h-4 w-4" /> Add
                         </Button>
                     </DialogTrigger>
                     <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline">
                                 <Upload className="mr-2 h-4 w-4" /> Import
                             </Button>
                         </DialogTrigger>
@@ -653,18 +653,18 @@ export default function DashboardPage() {
                                 <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
                                     <Phone className="h-4 w-4"/> {student.phone}
                                 </a>
-                                <div className="flex items-center gap-2">
+                                <a href={`mailto:${student.email}`} className="flex items-center gap-2 hover:underline">
                                     <Mail className="h-4 w-4"/> {student.email}
-                                </div>
+                                </a>
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <a href={`tel:${student.phone}`} onClick={(e) => handlePhoneClick(e, student.id)} className="flex items-center gap-2 hover:underline">
                                 <Phone className="h-4 w-4 text-muted-foreground"/> {student.phone}
                             </a>
-                             <div className="flex items-center gap-2 text-muted-foreground">
+                             <a href={`mailto:${student.email}`} className="flex items-center gap-2 text-muted-foreground hover:underline">
                                 <Mail className="h-4 w-4"/> {student.email}
-                            </div>
+                            </a>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
