@@ -77,14 +77,6 @@ import type { Group, Student, CallStatus, User as AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, writeBatch, getDocs, Timestamp, arrayUnion } from 'firebase/firestore';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart"
-import { PieChart, Pie, Cell } from "recharts"
 import { subMonths } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -447,29 +439,6 @@ export default function DashboardPage() {
     return studentsForUser.reduce((acc, student) => acc + student.callHistory.length, 0);
   }, [studentsForUser]);
 
-  const chartData = React.useMemo(() => {
-    const statuses: { [key in CallStatus]: number } = {
-      'Called': 0,
-      'Voicemail': 0,
-      'Missed Call': 0,
-      'Not Called': 0,
-    };
-    
-    studentsInSelectedGroup.forEach(student => {
-      const lastStatus = student.callHistory[student.callHistory.length - 1]?.status ?? 'Not Called';
-      statuses[lastStatus]++;
-    });
-
-    return Object.entries(statuses).map(([name, value]) => ({ name, value, fill: `var(--color-${name.replace(/\s+/g, '')})` }));
-  }, [studentsInSelectedGroup]);
-
-  const chartConfig = {
-    Called: { label: "Called", color: "hsl(var(--chart-1))" },
-    Voicemail: { label: "Voicemail", color: "hsl(var(--chart-2))" },
-    MissedCall: { label: "Missed Call", color: "hsl(var(--chart-3))" },
-    NotCalled: { label: "Not Called", color: "hsl(var(--chart-4))" },
-  }
-  
   if (!currentUser) {
     return null; // or a loading spinner
   }
@@ -584,21 +553,45 @@ export default function DashboardPage() {
                 <CardTitle>{selectedGroup?.name} Overview</CardTitle>
                 <CardDescription>Call status breakdown for this group.</CardDescription>
               </CardHeader>
-              <CardContent className="flex items-start justify-start">
-                 <ChartContainer config={chartConfig} className="aspect-square h-[250px] w-full">
-                  <PieChart>
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60}>
-                       {chartData.map((entry) => (
-                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                     <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                  </PieChart>
-                </ChartContainer>
+              <CardContent>
+                 <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Not Called</CardTitle>
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{statusCounts['Not Called']}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Called</CardTitle>
+                            <PhoneCall className="h-4 w-4 text-green-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{statusCounts.Called}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Voicemail</CardTitle>
+                            <Voicemail className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{statusCounts.Voicemail}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Missed Call</CardTitle>
+                            <PhoneMissed className="h-4 w-4 text-red-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{statusCounts['Missed Call']}</div>
+                        </CardContent>
+                    </Card>
+                 </div>
               </CardContent>
             </Card>
           ) : (
