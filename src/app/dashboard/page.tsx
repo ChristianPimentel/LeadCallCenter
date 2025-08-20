@@ -600,7 +600,6 @@ export default function DashboardPage() {
                     {filteredStudents.length > 0 ? filteredStudents.map(student => {
                       const lastCall = student.callHistory[student.callHistory.length - 1];
                       const status: CallStatus = lastCall?.status ?? 'Not Called';
-                      const canEditStudent = isAdmin || currentUser.id === student.createdBy;
                       return (
                         <TableRow key={student.id}>
                           <TableCell>
@@ -640,19 +639,17 @@ export default function DashboardPage() {
                              {lastCall && <div className="text-xs text-muted-foreground mt-1">{lastCall.timestamp.toDate().toLocaleString()}</div>}
                           </TableCell>
                           <TableCell>
-                            {canEditStudent && (
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreVertical className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleEditStudentClick(student)}>Edit</DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       )
