@@ -271,6 +271,7 @@ export default function DashboardPage() {
   }
 
   return (
+    <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
         <div className="flex h-16 items-center gap-2 border-b px-6">
@@ -318,6 +319,7 @@ export default function DashboardPage() {
         </header>
 
         <main className="flex-1 p-4 sm:p-6">
+          <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
           {selectedGroupId ? (
             <Card>
               <CardHeader>
@@ -342,9 +344,11 @@ export default function DashboardPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full sm:w-auto flex-1 sm:flex-initial">
-                      <Plus className="mr-2 h-4 w-4" /> Add Student
-                    </Button>
+                     <DialogTrigger asChild>
+                        <Button onClick={() => { setEditingStudent(null); setStudentDialogOpen(true); }} className="w-full sm:w-auto flex-1 sm:flex-initial">
+                          <Plus className="mr-2 h-4 w-4" /> Add Student
+                        </Button>
+                    </DialogTrigger>
                   </div>
                 </div>
               </CardHeader>
@@ -397,7 +401,9 @@ export default function DashboardPage() {
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Voicemail')}>Log "Voicemail"</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleLogCall(student.id, 'Missed Call')}>Log "Missed Call"</DropdownMenuItem>
                                 <Separator />
-                                 <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
+                                 <DialogTrigger asChild>
+                                    <DropdownMenuItem onClick={() => { setEditingStudent(student); setStudentDialogOpen(true); }}>Edit</DropdownMenuItem>
+                                 </DialogTrigger>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -428,56 +434,51 @@ export default function DashboardPage() {
                 </div>
             </div>
           )}
+           <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleStudentFormSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="studentName" className="text-right">Name</Label>
+                    <Input id="studentName" name="studentName" defaultValue={editingStudent?.name} className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="studentPhone" className="text-right">Phone</Label>
+                    <Input id="studentPhone" name="studentPhone" type="tel" defaultValue={editingStudent?.phone} className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="studentEmail" className="text-right">Email</Label>
+                    <Input id="studentEmail" name="studentEmail" type="email" defaultValue={editingStudent?.email} className="col-span-3" required />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingStudent ? 'Save Changes' : 'Add Student'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
       
-      {/* Group Dialog */}
-      <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleGroupFormSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="groupName" className="text-right">Name</Label>
-                <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
-              </div>
+      {/* Group Dialog Content */}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleGroupFormSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="groupName" className="text-right">Name</Label>
+              <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
             </div>
-            <DialogFooter>
-              <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Student Dialog */}
-      <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleStudentFormSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="studentName" className="text-right">Name</Label>
-                <Input id="studentName" name="studentName" defaultValue={editingStudent?.name} className="col-span-3" required />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="studentPhone" className="text-right">Phone</Label>
-                <Input id="studentPhone" name="studentPhone" type="tel" defaultValue={editingStudent?.phone} className="col-span-3" required />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="studentEmail" className="text-right">Email</Label>
-                <Input id="studentEmail" name="studentEmail" type="email" defaultValue={editingStudent?.email} className="col-span-3" required />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">{editingStudent ? 'Save Changes' : 'Add Student'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+          <DialogFooter>
+            <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
 
       {/* Delete Group Alert */}
       <AlertDialog open={deleteGroupAlertOpen} onOpenChange={setDeleteGroupAlertOpen}>
@@ -495,5 +496,6 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </Dialog>
   );
 }
