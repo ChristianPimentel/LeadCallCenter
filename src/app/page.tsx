@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { LoginForm } from '@/components/auth/login-form';
 import { Logo } from '@/components/icons';
 
@@ -17,15 +16,6 @@ export default function Home() {
             <p className="text-lg text-muted-foreground mb-6">
               Streamline your student outreach. Manage groups, track calls, and improve communication efficiency.
             </p>
-            <div className="w-full aspect-video relative rounded-lg overflow-hidden shadow-xl border">
-                <Image
-                    src="https://placehold.co/600x400.png"
-                    alt="Dashboard preview"
-                    fill
-                    className="object-cover"
-                    data-ai-hint="dashboard preview"
-                />
-            </div>
           </div>
           <div className="w-full">
             <LoginForm />
