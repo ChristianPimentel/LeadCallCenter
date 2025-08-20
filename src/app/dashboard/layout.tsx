@@ -26,6 +26,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button size="icon" variant="outline" className="sm:hidden">
               <PanelLeft className="h-5 w-5" />
@@ -76,6 +77,7 @@ export default function DashboardLayout({
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="#"
+                onClick={() => setIsSheetOpen(false)}
                 className={cn("group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base", passwordResetRequired && "pointer-events-none")}
               >
                 <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
@@ -83,6 +85,7 @@ export default function DashboardLayout({
               </Link>
               <Link
                 href="/dashboard"
+                onClick={() => setIsSheetOpen(false)}
                 className={mobileNavLinkClasses("/dashboard", passwordResetRequired)}
               >
                 <Home className="h-5 w-5" />
@@ -91,6 +94,7 @@ export default function DashboardLayout({
               {isAdmin && (
                 <Link
                   href="/dashboard/users"
+                  onClick={() => setIsSheetOpen(false)}
                   className={mobileNavLinkClasses("/dashboard/users", passwordResetRequired)}
                 >
                   <UsersIcon className="h-5 w-5" />
@@ -99,6 +103,7 @@ export default function DashboardLayout({
               )}
               <Link
                 href="/dashboard/account"
+                onClick={() => setIsSheetOpen(false)}
                 className={mobileNavLinkClasses("/dashboard/account")}
               >
                 <UserCog className="h-5 w-5" />
