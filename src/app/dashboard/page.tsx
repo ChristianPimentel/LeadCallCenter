@@ -75,6 +75,7 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
+import { cn } from '@/lib/utils';
 
 const getStatusBadgeVariant = (status: CallStatus) => {
   switch (status) {
@@ -375,30 +376,23 @@ export default function DashboardPage() {
                 </DialogTrigger>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Students</TableHead>
-                      <TableHead><span className="sr-only">Actions</span></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div className="flex flex-col gap-2">
                     {userGroups.map(group => {
                       const groupStudents = allStudents.filter(s => s.groupId === group.id);
                       return (
-                        <TableRow
-                          key={group.id}
-                          className={`cursor-pointer ${selectedGroupId === group.id ? 'bg-muted/50' : ''}`}
-                          onClick={() => setSelectedGroupId(group.id)}
-                        >
-                          <TableCell className="font-medium">{group.name}</TableCell>
-                          <TableCell>{groupStudents.length}</TableCell>
-                          <TableCell>
+                        <div key={group.id} className="flex items-center">
+                            <Button
+                                variant={selectedGroupId === group.id ? 'secondary' : 'ghost'}
+                                className={cn("w-full justify-start")}
+                                onClick={() => setSelectedGroupId(group.id)}
+                            >
+                                <div className="flex-1 text-left">{group.name}</div>
+                                <Badge variant="outline" className="ml-2">{groupStudents.length}</Badge>
+                            </Button>
                             {(isAdmin || currentUser.id === group.createdBy) && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0" onClick={e => e.stopPropagation()}>
+                                  <Button variant="ghost" className="h-8 w-8 p-0 ml-2">
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -412,12 +406,10 @@ export default function DashboardPage() {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
-                          </TableCell>
-                        </TableRow>
+                        </div>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                  </div>
               </CardContent>
             </Card>
             <DialogContent>
@@ -642,5 +634,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
