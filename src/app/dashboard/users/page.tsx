@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Edit, Trash2, Copy, KeyRound } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Copy, KeyRound, UserX, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -52,6 +52,7 @@ import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 // Function to generate a random password
 const generatePassword = () => {
@@ -90,7 +91,7 @@ export default function UsersPage() {
 
     const usersCollection = collection(db, 'users');
     const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), status: doc.data().status || 'Active' } as User));
       setUsers(usersData);
     });
 
@@ -115,6 +116,7 @@ export default function UsersPage() {
         const newPassword = generatePassword();
         userData.password = newPassword;
         userData.passwordResetRequired = true;
+        userData.status = 'Active';
         
         await addDoc(collection(db, 'users'), userData);
 
@@ -164,6 +166,22 @@ export default function UsersPage() {
     } catch (error) {
         console.error("Error resetting password: ", error);
         toast({ title: "Error", description: "Could not reset password.", variant: "destructive" });
+    }
+  };
+  
+  const handleToggleUserStatus = async (user: User) => {
+    if (user.id === currentUser?.id) {
+        toast({ title: "Action not allowed", description: "You cannot change the status of your own account.", variant: "destructive" });
+        return;
+    }
+    try {
+        const newStatus = user.status === 'Active' ? 'Disabled' : 'Active';
+        const userDoc = doc(db, 'users', user.id);
+        await updateDoc(userDoc, { status: newStatus });
+        toast({ title: "User Status Updated", description: `${user.name}'s account has been ${newStatus === 'Active' ? 'enabled' : 'disabled'}.` });
+    } catch (error) {
+        console.error("Error updating user status: ", error);
+        toast({ title: "Error", description: "Could not update user status.", variant: "destructive" });
     }
   };
 
@@ -248,17 +266,23 @@ export default function UsersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map(user => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} className={cn(user.status === 'Disabled' && 'text-muted-foreground')}>
                   <TableCell className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
                       {user.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
+                      {user.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -275,6 +299,13 @@ export default function UsersPage() {
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handlePasswordReset(user)}>
                                 <KeyRound className="mr-2 h-4 w-4" /> Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleUserStatus(user)}>
+                                {user.status === 'Active' ? (
+                                    <><UserX className="mr-2 h-4 w-4" /> Disable</>
+                                ) : (
+                                    <><UserCheck className="mr-2 h-4 w-4" /> Enable</>
+                                )}
                             </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

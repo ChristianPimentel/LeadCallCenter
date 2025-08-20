@@ -33,4 +33,5 @@ export type User = {
   role: 'Admin' | 'User';
   password?: string;
   passwordResetRequired?: boolean;
+  status?: 'Active' | 'Disabled';
 };

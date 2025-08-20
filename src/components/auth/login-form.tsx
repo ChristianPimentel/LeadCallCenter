@@ -19,8 +19,8 @@ import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const initialUsers: Omit<User, 'id'>[] = [
-  { name: 'Admin User', email: 'admin@example.com', role: 'Admin', password: 'password' },
-  { name: 'Regular User', email: 'user@example.com', role: 'User', password: 'password' },
+  { name: 'Admin User', email: 'admin@example.com', role: 'Admin', password: 'password', status: 'Active' },
+  { name: 'Regular User', email: 'user@example.com', role: 'User', password: 'password', status: 'Active' },
 ];
 
 async function seedInitialUsers() {
@@ -67,6 +67,16 @@ export function LoginForm() {
       
       const userDoc = querySnapshot.docs[0];
       const userToLogin = { id: userDoc.id, ...userDoc.data() } as User;
+
+      if (userToLogin.status === 'Disabled') {
+        toast({
+          title: "Login Failed",
+          description: "Your account is disabled. Please contact an administrator.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
 
       if (userToLogin.password === password) {
         localStorage.setItem('callflow-currentUser', JSON.stringify(userToLogin));
