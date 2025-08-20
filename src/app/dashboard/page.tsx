@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Users,
   Plus,
@@ -19,6 +20,8 @@ import {
   Users2,
   Settings,
   Upload,
+  Database,
+  ExternalLink
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
@@ -396,7 +399,7 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6">
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
@@ -422,6 +425,21 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalCallsMade}</div>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Database Storage</CardTitle>
+               <Database className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1 GiB</div>
+              <p className="text-xs text-muted-foreground">
+                Free plan limit. 
+                <Link href="https://console.firebase.google.com/" target="_blank" className="underline inline-flex items-center gap-1">
+                    Check usage <ExternalLink className="h-3 w-3" />
+                </Link>
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -453,7 +471,7 @@ export default function DashboardPage() {
                         </Button>
                     </DialogTrigger>
                     
-                    {selectedGroup && (isAdmin || currentUser.id === selectedGroup.createdBy) && (
+                    {selectedGroup && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="icon">
@@ -465,9 +483,11 @@ export default function DashboardPage() {
                                 <DropdownMenuItem onClick={() => { setEditingGroup(selectedGroup); setGroupDialogOpen(true); }}>
                                     <Edit className="mr-2 h-4 w-4" /> Rename
                                 </DropdownMenuItem>
+                                { (isAdmin || currentUser.id === selectedGroup.createdBy) && (
                                 <DropdownMenuItem onClick={() => { setDeletingGroupId(selectedGroup.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}
@@ -722,5 +742,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
