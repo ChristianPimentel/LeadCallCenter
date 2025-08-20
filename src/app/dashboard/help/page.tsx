@@ -1,4 +1,7 @@
 
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -6,8 +9,24 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import type { User } from '@/lib/types';
 
 export default function HelpPage() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('callflow-currentUser');
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+    }
+  }, []);
+
+  const isAdmin = currentUser?.role === 'Admin';
+
   return (
     <div className="grid gap-6 max-w-4xl mx-auto">
       <div className="flex items-center">
@@ -56,12 +75,14 @@ export default function HelpPage() {
                 The import feature allows you to add multiple students at once from an XLSX file. The file must have three columns with the exact headers: 'name', 'phone', and 'email'. Any rows that do not have all three of these values will be skipped.
               </AccordionContent>
             </AccordionItem>
+            {isAdmin && (
              <AccordionItem value="item-6">
               <AccordionTrigger>How do I manage users? (Admin only)</AccordionTrigger>
               <AccordionContent>
                 If you are an Admin, you can access the "Users" page from the main navigation. On this page, you can add new users, and view existing administrators and standard users. When you add a new user, a temporary password is created which they will be required to change on their first login.
               </AccordionContent>
             </AccordionItem>
+            )}
           </Accordion>
         </CardContent>
       </Card>
