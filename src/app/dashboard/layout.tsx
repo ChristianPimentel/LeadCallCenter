@@ -49,8 +49,10 @@ export default function DashboardLayout({
   const passwordResetRequired = currentUser?.passwordResetRequired;
 
   const navLinkClasses = (href: string, disabled = false) => cn(
-    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-    pathname === href && "text-primary bg-muted",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    pathname === href
+      ? "bg-background text-foreground shadow-sm"
+      : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
     disabled && "pointer-events-none opacity-50"
   );
   
@@ -61,22 +63,63 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="icon" variant="outline" className="sm:hidden">
+              <PanelLeft className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-xs">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                href="#"
+                className={cn("group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base", passwordResetRequired && "pointer-events-none")}
+              >
+                <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
+                <span className="sr-only">CallFlow</span>
+              </Link>
+              <Link
+                href="/dashboard"
+                className={mobileNavLinkClasses("/dashboard", passwordResetRequired)}
+              >
+                <Home className="h-5 w-5" />
+                Groups
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/dashboard/users"
+                  className={mobileNavLinkClasses("/dashboard/users", passwordResetRequired)}
+                >
+                  <UsersIcon className="h-5 w-5" />
+                  Users
+                </Link>
+              )}
+              <Link
+                href="/dashboard/account"
+                className={mobileNavLinkClasses("/dashboard/account")}
+              >
+                <UserCog className="h-5 w-5" />
+                Manage Account
+              </Link>
+            </nav>
+          </SheetContent>
+        </Sheet>
+        
+        <div className="relative flex-1 md:grow-0">
             <Link href="/" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
               <Logo className="h-6 w-6" />
-              <span className="">CallFlow</span>
+              <span className="hidden sm:inline-block">CallFlow</span>
             </Link>
-          </div>
-          <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
+        </div>
+
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+             <Link
                 href="/dashboard"
                 className={navLinkClasses("/dashboard", passwordResetRequired)}
               >
-                <Home className="h-4 w-4" />
                 Groups
               </Link>
               {isAdmin && (
@@ -84,7 +127,6 @@ export default function DashboardLayout({
                   href="/dashboard/users"
                   className={navLinkClasses("/dashboard/users", passwordResetRequired)}
                 >
-                  <UsersIcon className="h-4 w-4" />
                   Users
                 </Link>
               )}
@@ -92,62 +134,11 @@ export default function DashboardLayout({
                 href="/dashboard/account"
                 className={navLinkClasses("/dashboard/account")}
               >
-                <UserCog className="h-4 w-4" />
                 Manage Account
               </Link>
-            </nav>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className={cn("flex items-center gap-2 text-lg font-semibold mb-4", passwordResetRequired && "pointer-events-none")}
-                >
-                  <Logo className="h-6 w-6" />
-                  <span className="">CallFlow</span>
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className={mobileNavLinkClasses("/dashboard", passwordResetRequired)}
-                >
-                  <Home className="h-5 w-5" />
-                  Groups
-                </Link>
-                {isAdmin && (
-                  <Link
-                    href="/dashboard/users"
-                    className={mobileNavLinkClasses("/dashboard/users", passwordResetRequired)}
-                  >
-                    <UsersIcon className="h-5 w-5" />
-                    Users
-                  </Link>
-                )}
-                <Link
-                  href="/dashboard/account"
-                  className={mobileNavLinkClasses("/dashboard/account")}
-                >
-                  <UserCog className="h-5 w-5" />
-                  Manage Account
-                </Link>
-              </nav>
-            </SheetContent>
-          </Sheet>
-          <div className="w-full flex-1" />
+        </nav>
+
+        <div className="flex items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
@@ -169,11 +160,11 @@ export default function DashboardLayout({
               </Link>
             </DropdownMenuContent>
           </DropdownMenu>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {children}
-        </main>
-      </div>
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        {children}
+      </main>
     </div>
   )
 }
