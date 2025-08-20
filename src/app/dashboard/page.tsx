@@ -295,8 +295,9 @@ export default function DashboardPage() {
   
   const handlePhoneClick = async (e: React.MouseEvent<HTMLAnchorElement>, studentId: string) => {
       e.preventDefault();
+      const href = e.currentTarget.href;
       await handleLogCall(studentId, 'Called');
-      window.location.href = e.currentTarget.href;
+      window.location.href = href;
   };
 
   const totalCallsMade = useMemo(() => {
