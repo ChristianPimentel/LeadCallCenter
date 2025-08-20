@@ -14,6 +14,9 @@ import {
   Voicemail,
   PhoneMissed,
   PhoneCall,
+  Activity,
+  User,
+  Users2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -60,10 +63,18 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import type { Group, Student, CallStatus, User } from '@/lib/types';
+import type { Group, Student, CallStatus, User as AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, where, writeBatch, getDocs, Timestamp, arrayUnion } from 'firebase/firestore';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart"
+import { PieChart, Pie, Cell } from "recharts"
 
 const getStatusBadgeVariant = (status: CallStatus) => {
   switch (status) {
@@ -88,7 +99,7 @@ export default function DashboardPage() {
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<CallStatus | 'all'>('all');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   // Dialog states
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -143,6 +154,13 @@ export default function DashboardPage() {
     return allGroups.filter(g => g.createdBy === currentUser.id);
   }, [allGroups, currentUser, isAdmin]);
 
+  const studentsForUser = useMemo(() => {
+    if (!currentUser) return [];
+    if (isAdmin) return allStudents;
+    const userGroupIds = userGroups.map(g => g.id);
+    return allStudents.filter(s => userGroupIds.includes(s.groupId));
+  }, [allStudents, userGroups, currentUser, isAdmin]);
+
   useEffect(() => {
     if (userGroups.length > 0 && !userGroups.find(g => g.id === selectedGroupId)) {
         setSelectedGroupId(userGroups[0].id);
@@ -153,18 +171,21 @@ export default function DashboardPage() {
 
   const selectedGroup = useMemo(() => userGroups.find(g => g.id === selectedGroupId), [userGroups, selectedGroupId]);
   
+  const studentsInSelectedGroup = useMemo(() => {
+     if (!selectedGroupId) return [];
+     return allStudents.filter(s => s.groupId === selectedGroupId);
+  }, [allStudents, selectedGroupId]);
+
   const filteredStudents = useMemo(() => {
     if (!selectedGroupId || !currentUser) return [];
     
-    let studentsInGroup = allStudents.filter(s => s.groupId === selectedGroupId);
-    
-    return studentsInGroup.filter(s => {
+    return studentsInSelectedGroup.filter(s => {
         const lastCallStatus = s.callHistory[s.callHistory.length - 1]?.status ?? 'Not Called';
         if (filterStatus === 'all') return true;
         if (filterStatus === 'Not Called') return s.callHistory.length === 0;
         return lastCallStatus === filterStatus;
       });
-  }, [allStudents, selectedGroupId, filterStatus, currentUser, isAdmin]);
+  }, [studentsInSelectedGroup, selectedGroupId, filterStatus, currentUser, isAdmin]);
 
   const handleGroupFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -196,11 +217,9 @@ export default function DashboardPage() {
     try {
       const batch = writeBatch(db);
       
-      // Delete the group
       const groupDoc = doc(db, 'groups', deletingGroupId);
       batch.delete(groupDoc);
       
-      // Find and delete all students in the group
       const q = query(collection(db, 'students'), where('groupId', '==', deletingGroupId));
       const studentsSnapshot = await getDocs(q);
       studentsSnapshot.forEach(doc => batch.delete(doc.ref));
@@ -259,92 +278,190 @@ export default function DashboardPage() {
       toast({ title: "Error", description: "Could not log call.", variant: "destructive" });
     }
   };
+
+  const totalCallsMade = useMemo(() => {
+    return studentsForUser.reduce((acc, student) => acc + student.callHistory.length, 0);
+  }, [studentsForUser]);
+
+  const chartData = useMemo(() => {
+    const statuses: { [key in CallStatus]: number } = {
+      'Called': 0,
+      'Voicemail': 0,
+      'Missed Call': 0,
+      'Not Called': 0,
+    };
+    
+    studentsInSelectedGroup.forEach(student => {
+      const lastStatus = student.callHistory[student.callHistory.length - 1]?.status ?? 'Not Called';
+      statuses[lastStatus]++;
+    });
+
+    return Object.entries(statuses).map(([name, value]) => ({ name, value, fill: `var(--color-${name.replace(/\s+/g, '')})` }));
+  }, [studentsInSelectedGroup]);
+
+  const chartConfig = {
+    Called: { label: "Called", color: "hsl(var(--chart-1))" },
+    Voicemail: { label: "Voicemail", color: "hsl(var(--chart-2))" },
+    MissedCall: { label: "Missed Call", color: "hsl(var(--chart-3))" },
+    NotCalled: { label: "Not Called", color: "hsl(var(--chart-4))" },
+  }
   
   if (!currentUser) {
     return null; // or a loading spinner
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-      <div className="xl:col-span-1">
-        <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
+    <div className="grid gap-6">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Groups</CardTitle>
-                <CardDescription>Select a group to view students.</CardDescription>
-              </div>
-              <DialogTrigger asChild>
-                <Button size="sm" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Group
-                </Button>
-              </DialogTrigger>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
+              <Users2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead><span className="sr-only">Actions</span></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {userGroups.map(group => {
-                    const groupStudents = allStudents.filter(s => s.groupId === group.id);
-                    return (
-                      <TableRow
-                        key={group.id}
-                        className={`cursor-pointer ${selectedGroupId === group.id ? 'bg-muted/50' : ''}`}
-                        onClick={() => setSelectedGroupId(group.id)}
-                      >
-                        <TableCell className="font-medium">{group.name}</TableCell>
-                        <TableCell>{groupStudents.length}</TableCell>
-                        <TableCell>
-                           {(isAdmin || currentUser.id === group.createdBy) && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={e => e.stopPropagation()}>
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingGroup(group); setGroupDialogOpen(true); }}>
-                                  <Edit className="mr-2 h-4 w-4" /> Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingGroupId(group.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="text-2xl font-bold">{userGroups.length}</div>
             </CardContent>
           </Card>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleGroupFormSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="groupName" className="text-right">Name</Label>
-                  <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+              <User className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{studentsForUser.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Calls Logged</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalCallsMade}</div>
+            </CardContent>
+          </Card>
+        </div>
 
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Groups</CardTitle>
+                  <CardDescription>Select a group to view students.</CardDescription>
+                </div>
+                <DialogTrigger asChild>
+                  <Button size="sm" onClick={() => { setEditingGroup(null); setGroupDialogOpen(true); }}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Group
+                  </Button>
+                </DialogTrigger>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead><span className="sr-only">Actions</span></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userGroups.map(group => {
+                      const groupStudents = allStudents.filter(s => s.groupId === group.id);
+                      return (
+                        <TableRow
+                          key={group.id}
+                          className={`cursor-pointer ${selectedGroupId === group.id ? 'bg-muted/50' : ''}`}
+                          onClick={() => setSelectedGroupId(group.id)}
+                        >
+                          <TableCell className="font-medium">{group.name}</TableCell>
+                          <TableCell>{groupStudents.length}</TableCell>
+                          <TableCell>
+                            {(isAdmin || currentUser.id === group.createdBy) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0" onClick={e => e.stopPropagation()}>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingGroup(group); setGroupDialogOpen(true); }}>
+                                    <Edit className="mr-2 h-4 w-4" /> Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingGroupId(group.id); setDeleteGroupAlertOpen(true); }} className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingGroup ? 'Edit Group' : 'Create New Group'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleGroupFormSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="groupName" className="text-right">Name</Label>
+                    <Input id="groupName" name="groupName" defaultValue={editingGroup?.name} className="col-span-3" required />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingGroup ? 'Save Changes' : 'Create Group'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="lg:col-span-3">
+          {selectedGroupId ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{selectedGroup?.name} Overview</CardTitle>
+                <CardDescription>Call status breakdown for this group.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center">
+                 <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60}>
+                       {chartData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                     <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                  </PieChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          ) : (
+             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full min-h-[400px]">
+                <div className="flex flex-col items-center gap-1 text-center">
+                    <Users className="h-12 w-12 text-muted-foreground" />
+                    <h3 className="text-2xl font-bold tracking-tight">
+                        No group selected
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        {userGroups.length > 0 ? "Select a group to view students." : "Create a group to get started."}
+                    </p>
+                </div>
+            </div>
+          )}
+        </div>
+      </div>
+    
       <div className="xl:col-span-2">
         <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
           {selectedGroupId ? (
@@ -491,7 +608,6 @@ export default function DashboardPage() {
           </Dialog>
       </div>
       
-      {/* Delete Group Alert */}
       <AlertDialog open={deleteGroupAlertOpen} onOpenChange={setDeleteGroupAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
