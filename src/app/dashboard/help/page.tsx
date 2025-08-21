@@ -73,7 +73,7 @@ export default function HelpPage() {
       <Card>
         <CardHeader>
           <CardTitle>Frequently Asked Questions</CardTitle>
-          <CardDescription>Find answers to common questions about using CallFlow.</CardDescription>
+          <CardDescription>Find answers to common questions about using Lead Call Center.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
