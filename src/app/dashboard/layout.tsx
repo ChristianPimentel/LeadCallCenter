@@ -126,7 +126,7 @@ export default function DashboardLayout({
         <div className="relative flex-1 md:grow-0">
             <Link href="/dashboard" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
               <Logo className="h-6 w-6" />
-              <span className="hidden sm:inline-block">CallFlow</span>
+              <span className="hidden sm:inline-block">CallFlow: Lead Call Center</span>
             </Link>
         </div>
 
