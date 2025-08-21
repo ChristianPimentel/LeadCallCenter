@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Copy, Trash2, KeyRound, Mail, User as UserIcon } from 'lucide-react';
+import { Plus, Copy, Trash2, KeyRound, Mail, User as UserIcon, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -125,6 +125,7 @@ export default function UsersPage() {
   // Dialog states
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string, email: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -210,9 +211,16 @@ export default function UsersPage() {
 
   const handleUserClick = (user: User) => {
     setEditingUser(user);
+    setIsEditing(false);
     setUserDialogOpen(true);
   };
   
+  const handleAddUserClick = () => {
+    setEditingUser(null);
+    setIsEditing(true);
+    setUserDialogOpen(true);
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied!", description: "Password copied to clipboard." });
@@ -272,29 +280,29 @@ export default function UsersPage() {
 
   return (
     <div className="grid gap-6">
-      <Dialog open={userDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingUser(null); setUserDialogOpen(isOpen);}}>
+      <Dialog open={userDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) { setEditingUser(null); setIsEditing(false); } setUserDialogOpen(isOpen);}}>
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
           </div>
           
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+              <DialogTitle>{editingUser ? 'User Details' : 'Add New User'}</DialogTitle>
               {editingUser && <DialogDescription>Manage user details and actions.</DialogDescription>}
             </DialogHeader>
             <form onSubmit={handleUserFormSubmit}>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userName" className="text-right">Name</Label>
-                  <Input id="userName" name="userName" defaultValue={editingUser?.name} className="col-span-3" required />
+                  <Input id="userName" name="userName" defaultValue={editingUser?.name} className="col-span-3" required disabled={!isEditing} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userEmail" className="text-right">Email</Label>
-                  <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required />
+                  <Input id="userEmail" name="userEmail" type="email" defaultValue={editingUser?.email} className="col-span-3" required disabled={!isEditing} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="userRole" className="text-right">Role</Label>
-                  <Select name="userRole" defaultValue={editingUser?.role || 'User'}>
+                  <Select name="userRole" defaultValue={editingUser?.role || 'User'} disabled={!isEditing}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
@@ -307,7 +315,7 @@ export default function UsersPage() {
                 {editingUser && (
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="userStatus" className="text-right">Status</Label>
-                        <Select name="userStatus" defaultValue={editingUser?.status || 'Active'}>
+                        <Select name="userStatus" defaultValue={editingUser?.status || 'Active'} disabled={!isEditing}>
                             <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Select a status" />
                             </SelectTrigger>
@@ -320,21 +328,35 @@ export default function UsersPage() {
                 )}
               </div>
               <DialogFooter className="sm:justify-between">
-                <div>
-                    {editingUser && currentUser?.id !== editingUser.id && (
+                 <div>
+                    {editingUser && (
                         <div className="flex gap-2">
-                             <Button type="button" variant="outline" onClick={() => setResetPasswordAlertOpen(true)}>
-                                <KeyRound className="mr-2 h-4 w-4" />
-                                Reset Password
-                            </Button>
-                            <Button type="button" variant="destructive" onClick={() => setDeleteAlertOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                            </Button>
+                            {isEditing && currentUser?.id !== editingUser.id && (
+                                <>
+                                    <Button type="button" variant="outline" onClick={() => setResetPasswordAlertOpen(true)}>
+                                        <KeyRound className="mr-2 h-4 w-4" />
+                                        Reset Password
+                                    </Button>
+                                    <Button type="button" variant="destructive" onClick={() => setDeleteAlertOpen(true)}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
-                <Button type="submit">{editingUser ? 'Save Changes' : 'Add User'}</Button>
+                <div>
+                    {editingUser && !isEditing && (
+                         <Button type="button" onClick={() => setIsEditing(true)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                        </Button>
+                    )}
+                    {isEditing && (
+                        <Button type="submit">{editingUser ? 'Save Changes' : 'Add User'}</Button>
+                    )}
+                </div>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -359,7 +381,7 @@ export default function UsersPage() {
                     <div className="flex items-center gap-4">
                          <CardTitle>Users</CardTitle>
                         <DialogTrigger asChild>
-                            <Button size="icon" variant="outline" onClick={() => { setEditingUser(null); setUserDialogOpen(true); }}>
+                            <Button size="icon" variant="outline" onClick={handleAddUserClick}>
                                 <Plus className="h-4 w-4" />
                                 <span className="sr-only">Add User</span>
                             </Button>
