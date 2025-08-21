@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link"
-import { Home, Users as UsersIcon, PanelLeft, UserCog, LifeBuoy } from "lucide-react"
+import { Home, Users as UsersIcon, PanelLeft, UserCog, LifeBuoy, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
