@@ -83,7 +83,7 @@ export default function DashboardLayout({
                 className={cn("group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base", passwordResetRequired && "pointer-events-none")}
               >
                 <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
-                <span className="sr-only">CallFlow</span>
+                <span className="sr-only">Lead Call Center</span>
               </Link>
               <Link
                 href="/dashboard"
@@ -126,7 +126,7 @@ export default function DashboardLayout({
         <div className="relative flex-1 md:grow-0">
             <Link href="/dashboard" className={cn("flex items-center gap-2 font-semibold", passwordResetRequired && "pointer-events-none")}>
               <Logo className="h-6 w-6" />
-              <span className="hidden sm:inline-block">CallFlow: Lead Call Center</span>
+              <span className="hidden sm:inline-block">Lead Call Center</span>
             </Link>
         </div>
 

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'CallFlow: Lead Call Center',
+  title: 'Lead Call Center',
   description: 'Efficiently manage and track student calls.',
 };
 
