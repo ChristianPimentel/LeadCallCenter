@@ -3,13 +3,6 @@
 
 import React, { useState, useEffect } from 'react';
 import type { User } from '@/lib/types';
-import { useIsMobile } from '@/hooks/use-mobile';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const faqs = [
@@ -53,35 +46,9 @@ const faqs = [
     }
 ];
 
-const FaqAccordion = ({ items }: { items: typeof faqs }) => (
-    <Accordion type="single" collapsible className="w-full">
-        {items.map(faq => (
-            <AccordionItem value={faq.id} key={faq.id}>
-                <AccordionTrigger>{faq.question}</AccordionTrigger>
-                <AccordionContent>{faq.answer}</AccordionContent>
-            </AccordionItem>
-        ))}
-    </Accordion>
-);
-
-const FaqCards = ({ items }: { items: typeof faqs }) => (
-    <div className="space-y-4">
-        {items.map(faq => (
-             <Card key={faq.id}>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base">{faq.question}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                   {faq.answer}
-                </CardContent>
-            </Card>
-        ))}
-    </div>
-);
 
 export default function HelpPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     try {
@@ -97,11 +64,6 @@ export default function HelpPage() {
   const isAdmin = currentUser?.role === 'Admin';
   const visibleFaqs = isAdmin ? faqs : faqs.filter(faq => !faq.adminOnly);
   
-  const [firstHalf, secondHalf] = React.useMemo(() => {
-    const half = Math.ceil(visibleFaqs.length / 2);
-    return [visibleFaqs.slice(0, half), visibleFaqs.slice(half)];
-  }, [visibleFaqs]);
-
   return (
     <div className="grid gap-6 max-w-6xl mx-auto">
       <div className="flex items-center">
@@ -114,14 +76,18 @@ export default function HelpPage() {
           <CardDescription>Find answers to common questions about using CallFlow.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isMobile ? (
-             <FaqCards items={visibleFaqs} />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                <FaqAccordion items={firstHalf} />
-                <FaqAccordion items={secondHalf} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {visibleFaqs.map(faq => (
+                     <Card key={faq.id}>
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base">{faq.question}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+                           {faq.answer}
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
-          )}
         </CardContent>
       </Card>
     </div>
