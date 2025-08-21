@@ -431,7 +431,7 @@ export default function UsersPage() {
                 asChild
             >
                 <a
-                    href={`mailto:${passwordInfo?.email}?subject=Your Lead Call Center Temporary Password&body=Hello ${passwordInfo?.name},%0A%0AYour account for Lead Call Center has been created.%0A%0AYou can log in here: https://tinyurl.com/Lead-Call%0A%0AEmail: ${passwordInfo?.email}%0ATemporary Password: ${passwordInfo?.pass}%0A%0APlease log in and change your password immediately.`}
+                    href={`mailto:${passwordInfo?.email}?subject=Your Lead Call Center Temporary Password&body=Hello ${passwordInfo?.name},%0A%0AYour account for Lead Call Center has been created.%0A%0AYou can log in here: https://tinyurl.com/LeadCallCenter%0A%0AEmail: ${passwordInfo?.email}%0ATemporary Password: ${passwordInfo?.pass}%0A%0APlease log in and change your password immediately.`}
                 >
                     <Mail className="mr-2 h-4 w-4" />
                     Send Email
