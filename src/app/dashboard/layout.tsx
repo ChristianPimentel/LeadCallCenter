@@ -91,7 +91,7 @@ export default function DashboardLayout({
                 className={mobileNavLinkClasses("/dashboard", passwordResetRequired)}
               >
                 <Home className="h-5 w-5" />
-                Groups
+                Dashboard
               </Link>
               {isAdmin && (
                 <Link
@@ -135,7 +135,7 @@ export default function DashboardLayout({
                 href="/dashboard"
                 className={navLinkClasses("/dashboard", passwordResetRequired)}
               >
-                Groups
+                Dashboard
               </Link>
               {isAdmin && (
                 <Link
