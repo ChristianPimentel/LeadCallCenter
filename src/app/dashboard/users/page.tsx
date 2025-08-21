@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Copy, Trash2, KeyRound, Mail } from 'lucide-react';
+import { Plus, Copy, Trash2, KeyRound, Mail, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -47,6 +47,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 // Function to generate a random password
@@ -55,6 +56,35 @@ const generatePassword = () => {
 };
 
 const UserTable = ({ users, currentUser, onUserClick }: { users: User[], currentUser: User, onUserClick: (user: User) => void }) => {
+    const isMobile = useIsMobile();
+
+    if (isMobile) {
+        return (
+            <div className="divide-y">
+                {users.map(user => (
+                    <div
+                        key={user.id}
+                        className={cn(
+                            "p-4 grid grid-cols-3 items-center gap-4 cursor-pointer",
+                            user.status === 'Disabled' && 'text-muted-foreground'
+                        )}
+                        onClick={() => onUserClick(user)}
+                    >
+                        <div className="col-span-2">
+                            <div className="font-medium">{user.name}{user.id === currentUser.id && " (You)"}</div>
+                            <div className="text-sm text-muted-foreground break-words">{user.email}</div>
+                        </div>
+                        <div className="flex justify-end">
+                             <Badge variant={user.status === 'Active' ? 'outline' : 'destructive'}>
+                                {user.status}
+                            </Badge>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
     return (
         <Table>
             <TableHeader>
@@ -425,7 +455,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-    
-
-    
