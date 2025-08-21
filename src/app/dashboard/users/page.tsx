@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Copy, Trash2, KeyRound } from 'lucide-react';
+import { Plus, Copy, Trash2, KeyRound, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -95,7 +95,7 @@ export default function UsersPage() {
   // Dialog states
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string } | null>(null);
+  const [passwordInfo, setPasswordInfo] = useState<{ name: string; pass: string, email: string } | null>(null);
   const [passwordAlertOpen, setPasswordAlertOpen] = useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [resetPasswordAlertOpen, setResetPasswordAlertOpen] = useState(false);
@@ -166,7 +166,7 @@ export default function UsersPage() {
         await addDoc(collection(db, 'users'), userData);
 
         toast({ title: "User Added", description: `${name} has been added successfully.` });
-        setPasswordInfo({ name: name, pass: newPassword });
+        setPasswordInfo({ name: name, pass: newPassword, email: email });
         setPasswordAlertOpen(true);
       }
     } catch (error) {
@@ -194,7 +194,7 @@ export default function UsersPage() {
     try {
         const userDoc = doc(db, 'users', editingUser.id);
         await updateDoc(userDoc, { password: newPassword, passwordResetRequired: true });
-        setPasswordInfo({ name: editingUser.name, pass: newPassword });
+        setPasswordInfo({ name: editingUser.name, pass: newPassword, email: editingUser.email });
         setPasswordAlertOpen(true);
         setResetPasswordAlertOpen(false);
         setUserDialogOpen(false);
@@ -374,6 +374,17 @@ export default function UsersPage() {
             </Button>
           </div>
           <AlertDialogFooter>
+            <Button
+                variant="outline"
+                asChild
+            >
+                <a
+                    href={`mailto:${passwordInfo?.email}?subject=Your CallFlow Temporary Password&body=Hello ${passwordInfo?.name},%0A%0AYour account for CallFlow has been created.%0A%0AEmail: ${passwordInfo?.email}%0ATemporary Password: ${passwordInfo?.pass}%0A%0APlease log in and change your password immediately.`}
+                >
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Email
+                </a>
+            </Button>
             <AlertDialogAction onClick={() => { setPasswordAlertOpen(false); setPasswordInfo(null); }}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
